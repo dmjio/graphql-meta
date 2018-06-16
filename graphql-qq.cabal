@@ -1,0 +1,43 @@
+name:                graphql-qq
+version:             0.1.0.0
+synopsis:            Generic and meta programming facilities for GraphQL
+description:         Quasi-quotater for GraphQL Schema and QueryDocuments
+homepage:            https://github.com/urbint/graphql-qq
+license:             BSD3
+license-file:        LICENSE
+author:              David Johnson
+maintainer:          david@urbint.com
+copyright:           Urbint (c) 2018-2019
+category:            Language
+build-type:          Simple
+extra-source-files:  ChangeLog.md
+cabal-version:       >=1.10
+
+library
+  exposed-modules:
+    GraphQL.QQ
+  build-depends:
+    attoparsec,
+    base < 5,
+    text,
+    graphql-api >= 0.3,
+    template-haskell
+  hs-source-dirs:
+    src
+  default-language:
+    Haskell2010
+
+executable example
+  main-is:
+    Main.hs
+  build-depends:
+    base < 5,
+    graphql-qq
+  hs-source-dirs:
+    example
+  default-language:
+    Haskell2010
+
+source-repository head
+  type: git
+  location: https://github.com/urbint/graphql-qq.git
