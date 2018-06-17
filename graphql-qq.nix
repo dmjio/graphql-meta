@@ -1,4 +1,4 @@
-{ mkDerivation, attoparsec, base, graphql-api, stdenv
+{ mkDerivation, attoparsec, base, containers, graphql-api, stdenv
 , template-haskell, text
 }:
 mkDerivation {
@@ -8,9 +8,9 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    attoparsec base graphql-api template-haskell text
+    attoparsec base containers graphql-api template-haskell text
   ];
-  executableHaskellDepends = [ base ];
+  executableHaskellDepends = [ base graphql-api ];
   homepage = "https://github.com/urbint/graphql-qq";
   description = "Generic and meta programming facilities for GraphQL";
   license = stdenv.lib.licenses.bsd3;

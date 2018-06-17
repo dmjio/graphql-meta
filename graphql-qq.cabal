@@ -5,7 +5,7 @@ description:         Quasi-quotater for GraphQL Schema and QueryDocuments
 homepage:            https://github.com/urbint/graphql-qq
 license:             BSD3
 license-file:        LICENSE
-author:              David Johnson
+author:              David Johnson, Ryan Schmukler
 maintainer:          david@urbint.com
 copyright:           Urbint (c) 2018-2019
 category:            Language
@@ -19,6 +19,7 @@ library
   build-depends:
     attoparsec,
     base < 5,
+    containers,
     text,
     graphql-api >= 0.3,
     template-haskell
@@ -32,6 +33,7 @@ executable example
     Main.hs
   build-depends:
     base < 5,
+    graphql-api,
     graphql-qq
   hs-source-dirs:
     example
