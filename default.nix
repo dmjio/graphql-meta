@@ -1,2 +1,2 @@
 { pkgs ? import <nixpkgs> {} }:
-  pkgs.haskellPackages.callPackage ./graphql-qq.nix {}
+  pkgs.haskellPackages.callPackage ./graphql-meta.nix {}

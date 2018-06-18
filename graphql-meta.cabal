@@ -1,8 +1,8 @@
-name:                graphql-qq
+name:                graphql-meta
 version:             0.1.0.0
 synopsis:            Generic and meta programming facilities for GraphQL
 description:         Quasi-quotater for GraphQL Schema and QueryDocuments
-homepage:            https://github.com/urbint/graphql-qq
+homepage:            https://github.com/urbint/graphql-meta
 license:             BSD3
 license-file:        LICENSE
 author:              David Johnson, Ryan Schmukler
@@ -16,6 +16,7 @@ cabal-version:       >=1.10
 library
   exposed-modules:
     GraphQL.QQ
+    GraphQL.Generic
   build-depends:
     attoparsec,
     base < 5,
@@ -34,7 +35,8 @@ executable example
   build-depends:
     base < 5,
     graphql-api,
-    graphql-qq
+    graphql-meta,
+    text
   hs-source-dirs:
     example
   default-language:
@@ -42,4 +44,4 @@ executable example
 
 source-repository head
   type: git
-  location: https://github.com/urbint/graphql-qq.git
+  location: https://github.com/urbint/graphql-meta.git
