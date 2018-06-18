@@ -32,18 +32,18 @@ main = print [query|{ building (id: 123) {floorCount, id}}|]
 
 QueryDocument {getDefinitions = [
   DefinitionOperation (AnonymousQuery [
-    SelectionField (Field Nothing (Name {unName = "building"}) [
-      Argument (Name {unName = "id"}) (ValueInt 123)] [] [
+	SelectionField (Field Nothing (Name {unName = "building"}) [
+	  Argument (Name {unName = "id"}) (ValueInt 123)] [] [
 	SelectionField (Field Nothing (Name {unName = "floorCount"}) [] [] [])
-      , SelectionField (Field Nothing (Name {unName = "id"}) [] [] [])
-      ])
-    ])
+	  , SelectionField (Field Nothing (Name {unName = "id"}) [] [] [])
+	  ])
+	])
   ]}
 ```
 
 ### Substitution
 
-[GraphQL](https://graphql.org/) `QueryDocument` abstract syntax tree rewriting is made possible via Haskell's metavariable substitution. During `QuasiQuotation` all unbound variables in a `GraphQL` query that have identical names inside the current Haskell closure will automatically be translated into `GraphQL` AST terms and substituted.
+[GraphQL](https://graphql.org/) `QueryDocument` abstract syntax tree rewriting is made possible via Haskell's metavariable substitution. During `QuasiQuotation` all unbound variables in a `GraphQL` query that have identical names inside the current scope will automatically be translated into `GraphQL` AST terms and substituted.
 
 ```haskell
 buildingQuery
@@ -60,12 +60,12 @@ buildingQuery buildingId =
 
 QueryDocument {getDefinitions = [
   DefinitionOperation (AnonymousQuery [
-    SelectionField (Field Nothing (Name {unName = "building"}) [
-      Argument (Name {unName = "buildingId"}) (ValueInt 4)] [] [
+	SelectionField (Field Nothing (Name {unName = "building"}) [
+	  Argument (Name {unName = "buildingId"}) (ValueInt 4)] [] [
 	SelectionField (Field Nothing (Name {unName = "floorCount"}) [] [] [])
-      , SelectionField (Field Nothing (Name {unName = "id"}) [] [] [])
-      ])
-    ])
+	  , SelectionField (Field Nothing (Name {unName = "id"}) [] [] [])
+	  ])
+	])
   ]}
 ```
 
@@ -87,16 +87,27 @@ main = print [schema| type Person { name : String } |]
 ```haskell
 SchemaDocument [
   TypeDefinitionObject (ObjectTypeDefinition (Name {unName = "Person"}) [] [
-    FieldDefinition (Name {unName = "name"}) [] (TypeNamed (NamedType (Name {unName = "String"})))
+	FieldDefinition (Name {unName = "name"}) [] (TypeNamed (NamedType (Name {unName = "String"})))
   ])
 ]
 ```
 
 ## Generics
 It is possible to derive a `SchemaDocument` using `GHC.Generics`.
-Simply import `GHC.Generics`, derive `Generic` (must enable the `{-# LANGUAGE DeriveGeneric #-}` language extension, and make an instance of `ToSchemaDocument`. See below for an example:
+Simply import `GHC.Generics`, derive `Generic` (must enable the `{-# LANGUAGE DeriveGeneric #-}` language extension) and make an instance of `ToSchemaDocument`. See below for an example:
 
 ```haskell
+{-# LANGUAGE DeriveGeneric #-}
+
+module Main where
+
+import           GHC.Generics                    (Generic)
+import           GraphQL.Internal.Syntax.Encoder (schemaDocument)
+import           Data.Proxy                      (Proxy)
+import qualified Data.Text.IO                    as T
+
+import           GraphQL.Generic                 (ToSchemaDocument(..))
+
 data Person = Person
   { name :: String
   , age  :: Int
