@@ -61,10 +61,12 @@ data Person = Person
   , age  :: Int
   } deriving (Show, Eq, Generic)
 
-instance ToSchemaDocument Person
+instance ToObjectTypeDefinition Person
 
 showPersonSchema :: IO ()
 showPersonSchema
   = T.putStrLn
   $ schemaDocument
-  $ toSchemaDocument (Proxy @ Person)
+  $ SchemaDocument [ TypeDefinitionObject obj ]
+    where
+      obj = toObjectTypeDefinition (Proxy @ Person)

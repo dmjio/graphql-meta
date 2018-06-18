@@ -1,7 +1,7 @@
 graphql-meta
 ================
 
-Construct [GraphQL](https://graphql.org/) queries and schema at compile time.
+Correct-by-construction [GraphQL](https://graphql.org/) queries and schema at compile time.
 
 ## Table of Contents
 - [Query](#query)
@@ -23,7 +23,7 @@ module Main (main) where
 import GraphQL.QQ (query)
 
 main :: IO ()
-main = print [query|{ building (id: 123) {floorCount, id}}|]
+main = print [query| { building (id: 123) {floorCount, id}} |]
 ```
 
 #### Result
@@ -43,14 +43,14 @@ QueryDocument {getDefinitions = [
 
 ### Substitution
 
-[GraphQL](https://graphql.org/) `QueryDocument` abstract syntax tree rewriting is made possible via Haskell's metavariable substitution. During `QuasiQuotation` all unbound variables in a `GraphQL` query that have identical names inside the current scope will automatically be translated into `GraphQL` AST terms and substituted.
+[GraphQL](https://graphql.org/) `QueryDocument` abstract syntax tree rewriting is made possible via template haskell's metavariable substitution. During `QuasiQuotation` all unbound variables in a `GraphQL` query that have identical names inside the current scope will automatically be translated into `GraphQL` AST terms and substituted.
 
 ```haskell
 buildingQuery
   :: Int
   -> QueryDocument
 buildingQuery buildingId =
-  [query|{ building (id: $buildingId) {floorCount, id}}|]
+  [query| { building (id: $buildingId) {floorCount, id}} |]
 ```
 
 #### Result
@@ -93,8 +93,9 @@ SchemaDocument [
 ```
 
 ## Generics
-It is possible to derive a `SchemaDocument` using `GHC.Generics`.
-Simply import `GHC.Generics`, derive `Generic` (must enable the `{-# LANGUAGE DeriveGeneric #-}` language extension) and make an instance of `ToSchemaDocument`. See below for an example:
+It is possible to derive GraphQL schema using `GHC.Generics`.
+Simply import `GHC.Generics`, derive `Generic` (must enable the `DeriveGeneric` language extension) and make an instance of `ToObjectTypeDefintion`.
+See below for an example:
 
 ```haskell
 {-# LANGUAGE DeriveGeneric #-}
@@ -106,20 +107,22 @@ import           GraphQL.Internal.Syntax.Encoder (schemaDocument)
 import           Data.Proxy                      (Proxy)
 import qualified Data.Text.IO                    as T
 
-import           GraphQL.Generic                 (ToSchemaDocument(..))
+import           GraphQL.Generic                 (ToObjectTypeDefinition(..))
 
 data Person = Person
   { name :: String
   , age  :: Int
   } deriving (Show, Eq, Generic)
 
-instance ToSchemaDocument Person
+instance ToObjectTypeDefinition Person
 
 showPersonSchema :: IO ()
 showPersonSchema
   = T.putStrLn
   $ schemaDocument
-  $ toSchemaDocument (Proxy @ Person)
+  $ SchemaDocument [ TypeDefinitionObject obj ]
+    where
+      obj = toObjectTypeDefinition (Proxy @ Person)
 
 main :: IO () = showPersonSchema
 -- type Person{name:String!,age:Int!}
@@ -127,8 +130,12 @@ main :: IO () = showPersonSchema
 
 ## Limitations
 
-Generic deriving is only supported on product types with record field selectors.
-All generically derived types become `ObjectTypeDefintion`s
+- Generic deriving is currently only supported on product types with record field selectors.
+- Only `ObjectTypeDefintion` is currently supported.
+
+## Roadmap
+
+- Generic deriving of `ScalarTypeDefintion` and `EnumTypeDefintion`.
 
 ## Maintainers
 
@@ -137,7 +144,7 @@ All generically derived types become `ObjectTypeDefintion`s
 
 ## Credit
 
-Inspired by [@edsko](https://github.com/edsko)'s work [Quasi-quoting DLS for free](http://www.well-typed.com/blog/2014/10/quasi-quoting-dsls/)
+Inspired by [@edsko](https://github.com/edsko)'s work [Quasi-quoting DLS for free](http://www.well-typed.com/blog/2014/10/quasi-quoting-dsls/).
 
 
 ## License

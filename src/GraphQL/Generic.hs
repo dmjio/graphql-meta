@@ -15,15 +15,15 @@
 --------------------------------------------------------------------------------
 -- |
 -- Module      : GraphQL.Generic
--- Description : Compile-time facilities for dealing with GraphQL schema / queries
+-- Description : Correct-by-construction GraphQL type definitions via GHC.Generics
 -- Maintainer  : David Johnson <david@urbint.com>, Ryan Schmukler <ryan@urbint.com>
 -- Maturity    : Usable
 --
 --------------------------------------------------------------------------------
 module GraphQL.Generic
   ( -- * Classes
-    ToSchemaDocument  (..)
-  , GToSchemaDocument (..)
+    ToObjectTypeDefinition  (..)
+  , GToObjectTypeDefinition (..)
   , ToNamed           (..)
   , ToGQLType         (..)
   ) where
@@ -40,24 +40,22 @@ import           GraphQL.Internal.Name
 import           GraphQL.Internal.Syntax.AST
 --------------------------------------------------------------------------------
 
--- | Generically convert any product type into a 'SchemaDocument'
-class ToSchemaDocument (a :: *) where
-  toSchemaDocument
+-- | Generically convert any product type into a 'ObjectTypeDefinition'
+class ToObjectTypeDefinition (a :: *) where
+  toObjectTypeDefinition
     :: Proxy a
-    -> SchemaDocument
-  default toSchemaDocument
-    :: (Generic a, GToSchemaDocument (Rep a))
+    -> ObjectTypeDefinition
+  default toObjectTypeDefinition
+    :: (Generic a, GToObjectTypeDefinition (Rep a))
     => Proxy a
-    -> SchemaDocument
-  toSchemaDocument Proxy
-     = SchemaDocument
-     $ pure
-     $ TypeDefinitionObject
-     $ flip gToSchemaDocument emptyObjectTypeDef
+    -> ObjectTypeDefinition
+  toObjectTypeDefinition Proxy
+     = flip gToObjectTypeDefinition emptyObjectTypeDef
      $ Proxy @ (Rep a)
 
-class GToSchemaDocument (f :: * -> *) where
-  gToSchemaDocument
+-- | Internal class meant only for 'Generic' datatype instances
+class GToObjectTypeDefinition (f :: * -> *) where
+  gToObjectTypeDefinition
     :: Proxy f
     -> ObjectTypeDefinition
     -> ObjectTypeDefinition
@@ -93,41 +91,42 @@ combineFields
   (ObjectTypeDefinition name _ bs)
   = ObjectTypeDefinition name [] (as <> bs)
 
-instance GToSchemaDocument a => GToSchemaDocument (D1 i a) where
-  gToSchemaDocument Proxy = gToSchemaDocument (Proxy @ a)
+instance GToObjectTypeDefinition a => GToObjectTypeDefinition (D1 i a) where
+  gToObjectTypeDefinition Proxy = gToObjectTypeDefinition (Proxy @ a)
 
-instance (KnownSymbol name, GToSchemaDocument a) =>
-  GToSchemaDocument (C1 (MetaCons name x y) a) where
-    gToSchemaDocument Proxy obj =
-      gToSchemaDocument (Proxy @ a) (addName name obj)
+instance (KnownSymbol name, GToObjectTypeDefinition a) =>
+  GToObjectTypeDefinition (C1 (MetaCons name x y) a) where
+    gToObjectTypeDefinition Proxy obj =
+      gToObjectTypeDefinition (Proxy @ a) (addName name obj)
         where
           name = pack $ symbolVal (Proxy @ name)
 
 instance (ToGQLType gType, KnownSymbol name) =>
-  GToSchemaDocument (S1 (MetaSel (Just name) u s d) (K1 i gType)) where
-    gToSchemaDocument Proxy = addField field
+  GToObjectTypeDefinition (S1 (MetaSel (Just name) u s d) (K1 i gType)) where
+    gToObjectTypeDefinition Proxy = addField field
         where
           field = FieldDefinition fName [] gtype
           fName = Name $ pack $ symbolVal (Proxy @ name)
           gtype = toGQLType (Proxy @ gType)
 
-instance GToSchemaDocument U1 where
-  gToSchemaDocument Proxy = id
+instance GToObjectTypeDefinition U1 where
+  gToObjectTypeDefinition Proxy = id
 
-instance (GToSchemaDocument a, GToSchemaDocument b) =>
-  GToSchemaDocument (a :*: b) where
-    gToSchemaDocument Proxy o =
-      gToSchemaDocument (Proxy @ a) o
+instance (GToObjectTypeDefinition a, GToObjectTypeDefinition b) =>
+  GToObjectTypeDefinition (a :*: b) where
+    gToObjectTypeDefinition Proxy o =
+      gToObjectTypeDefinition (Proxy @ a) o
         `combineFields`
-          gToSchemaDocument (Proxy @ b) o
+          gToObjectTypeDefinition (Proxy @ b) o
 
-instance (GToSchemaDocument a, GToSchemaDocument b) =>
-  GToSchemaDocument (a :+: b) where
-    gToSchemaDocument Proxy o =
-      gToSchemaDocument (Proxy @ a) o
+instance (GToObjectTypeDefinition a, GToObjectTypeDefinition b) =>
+  GToObjectTypeDefinition (a :+: b) where
+    gToObjectTypeDefinition Proxy o =
+      gToObjectTypeDefinition (Proxy @ a) o
         `combineFields`
-           gToSchemaDocument (Proxy @ b) o
+           gToObjectTypeDefinition (Proxy @ b) o
 
+-- | Resolve Haskell types to GraphQL primitive names
 class ToNamed a where
   toNamed :: Proxy a -> NamedType
 
@@ -149,6 +148,7 @@ instance ToNamed Integer where
 instance ToNamed Bool where
   toNamed Proxy = NamedType (Name "Boolean")
 
+-- | Resolve Haskell types to GraphQL primitive types
 class ToGQLType a where
   toGQLType :: Proxy a -> GType
 
