@@ -22,7 +22,7 @@ library
     base < 5,
     containers,
     text,
-    graphql-api >= 0.3,
+    graphql-api,
     template-haskell
   hs-source-dirs:
     src

@@ -1,8 +1,9 @@
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE OverloadedStrings    #-}
-{-# LANGUAGE DeriveDataTypeable   #-}
-{-# LANGUAGE StandaloneDeriving   #-}
-{-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE CPP                #-}
+{-# LANGUAGE FlexibleInstances  #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell    #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module      : GraphQL.QQ
@@ -191,7 +192,11 @@ deriving instance Data OperationDefinition
 deriving instance Data VariableDefinition
 deriving instance Data Node
 deriving instance Data Value
+#if !MIN_VERSION_graphql_api(0,3,0)
+deriving instance Data GraphQL.Internal.Syntax.AST.Type
+#else
 deriving instance Data GType
+#endif
 deriving instance Data Field
 deriving instance Data FragmentSpread
 deriving instance Data Argument

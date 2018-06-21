@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE TypeOperators         #-}
@@ -150,7 +151,11 @@ instance ToNamed Bool where
 
 -- | Resolve Haskell types to GraphQL primitive types
 class ToGQLType a where
+#if !MIN_VERSION_graphql_api(0,3,0)
+  toGQLType :: Proxy a -> Type
+#else
   toGQLType :: Proxy a -> GType
+#endif
 
 instance ToGQLType a => ToGQLType [a] where
   toGQLType Proxy
