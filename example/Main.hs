@@ -26,7 +26,7 @@ main :: IO ()
 main = do
   print rawSchema
   print rawQuery
-  print (substitutedQuery "foo")
+  print (substitutedQuery ("foo"::String))
   showPersonSchema
 
 -- | Example of parsing a raw schema
