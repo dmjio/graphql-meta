@@ -86,6 +86,7 @@ parseGQLQuery
       | Just True <- M.lookup (T.unpack n) scopeTable =
          Just [| toExpr $(pure $ VarE (mkName $ T.unpack n)) |]
       | otherwise = Nothing
+    substituteVariables scopeTable _ = Nothing
 
 liftText :: T.Text -> Q Exp
 liftText txt = AppE (VarE 'T.pack) <$> lift (T.unpack txt)
