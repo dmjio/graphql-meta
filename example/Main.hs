@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric    #-}
 {-# LANGUAGE TemplateHaskell  #-}
 {-# LANGUAGE TypeApplications #-}
@@ -15,6 +16,7 @@ module Main (main) where
 import           GHC.Generics
 import           GraphQL.Internal.Syntax.AST
 import           GraphQL.Internal.Syntax.Encoder
+import qualified GraphQL.Internal.Syntax.Parser as P
 import qualified Data.Text.IO                    as T
 import           Data.Proxy
 --------------------------------------------------------------------------------
@@ -24,36 +26,28 @@ import           GraphQL.Generic
 
 main :: IO ()
 main = do
-  print rawSchema
-  print rawQuery
-  print (substitutedQuery ("foo"::String))
-  showPersonSchema
+  let k = foo ("asdlf" :: String)
+  print k
+  T.putStrLn $ queryDocument k
+  T.putStrLn $ queryDocument supG
 
--- | Example of parsing a raw schema
-rawSchema :: SchemaDocument
-rawSchema = [schema|
-  type Person {
-    name: String
-  }
-|]
+-- λ> main
+-- {building(param:"uuid-goes-here"){floorCount,height}}
 
--- | In this case, `x` is *not* in scope, so not substitution is performed
-rawQuery :: QueryDocument
-rawQuery = [query|{
-  human(id: $x) {
-    name
-    height
-  }
-}|]
+supG :: QueryDocument
+supG = substitutedQuery "building" "uuid-goes-here" "floorCount" "height"
 
--- | In this case, `x` is in scope, so substitution is performed
-substitutedQuery :: ToExpr x => x -> QueryDocument
-substitutedQuery x = [query|{
-  human(id: $x) {
-    name
-    height
-  }
-}|]
+substitutedQuery
+  :: String
+  -> String
+  -> String
+  -> String
+  -> QueryDocument
+substitutedQuery a b c d
+  = [query| { a(param: $b) { c d } } |]
+
+foo :: String -> QueryDocument
+foo hi = [query| query WhoHah ($id: String!) { building(id: $hi) { floorCount } }|]
 
 -- | Example of using GHC.Generics to create a Schema from a product type
 data Person = Person
