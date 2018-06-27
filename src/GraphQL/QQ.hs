@@ -191,8 +191,26 @@ parseGQLQuery
                    $(listE newDirs)
                    $(listE newSels)
                 |]
-    subFields scopeTable fieldsTable _ = Nothing
-
+    subFields scopeTable fieldsTable (SelectionFragmentSpread (FragmentSpread (GQLName.Name x) dirs)) = do
+      newDirs <- traverse (subDirs scopeTable) dirs
+      Just [| SelectionFragmentSpread
+                (FragmentSpread
+                   (GQLName.Name $(litE $ stringL $ T.unpack x))
+                   $(listE newDirs)) |]
+    subFields scopeTable fieldsTable (SelectionInlineFragment (InlineFragment maybeTypeCond dirs sels)) = do
+      newDirs <- traverse (subDirs scopeTable) dirs
+      newSels <- traverse (subFields scopeTable fieldsTable) sels
+      let newTypeCond = case maybeTypeCond of
+            Nothing -> [| Nothing |]
+            Just (NamedType (GQLName.Name c)) ->
+              [| Just $ NamedType $ GQLName.Name $(litE $ stringL $ T.unpack c) |]
+      Just [| SelectionInlineFragment
+                (InlineFragment
+                   $newTypeCond
+                   $(listE newDirs)
+                   $(listE newSels)
+                )
+            |]
 
 makeTable :: S.Set String -> Q (Map String Bool)
 makeTable xs = M.unions <$> do
