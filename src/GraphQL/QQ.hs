@@ -20,7 +20,6 @@ module GraphQL.QQ
     -- * Classes
   , ToExpr  (..)
   , ToField (..)
-  , ToName  (..)
   ) where
 --------------------------------------------------------------------------------
 import           Control.Monad
@@ -122,14 +121,18 @@ parseGQLQuery
     goVarDefs scopeTable (VariableDefinition (Variable (GQLName.Name n)) gtype defVal) = do
       newGType <- goGType gtype
       newVar <- Just [| GQLName.Name $(litE $ stringL $ T.unpack n) |]
-      case join $ subVars scopeTable <$> defVal of
-        Nothing -> Just [| VariableDefinition (Variable $newVar) $newGType $Nothing |]
-        Just newVal -> Just [| VariableDefinition (Variable $newVar) $newGType $newVal |]
+      newVal <- goDefVal scopeTable defVal
+      Just [| VariableDefinition (Variable $newVar) $newGType $newVal |]
+
+    goDefVal _ Nothing = Just [| Nothing |]
+    goDefVal scopeTable (Just val) = do
+      newVal <- subVars scopeTable val
+      Just [| Just $newVal |]
 
     subVars scopeTable (ValueVariable (Variable (GQLName.Name k))) =
       case M.lookup (T.unpack k) scopeTable of
         Just True -> Just [| toExpr $(pure $ VarE (mkName $ T.unpack k)) |]
-        _ -> Just [| toExpr $(litE $ stringL $ T.unpack k) |]
+        _ -> Just [| toExpr ($(litE $ stringL $ T.unpack k) :: String) |]
 
     subVars scopeTable (ValueString (StringValue k)) =
       case M.lookup (T.unpack k) scopeTable of
@@ -240,15 +243,6 @@ instance ToField Text where
 instance ToField String where
   toField s maybeAlias args dirs sels =
     SelectionField $ Field maybeAlias (GQLName.Name $ T.pack s) args dirs sels
-
-class ToName a where
-  toName :: a -> GQLName.Name
-
-instance ToName String where
-  toName = GQLName.Name . T.pack
-
-instance ToName Text where
-  toName = GQLName.Name
 
 -- | Used to convert Haskell metavariables into GraphQL Values
 class ToExpr a where
