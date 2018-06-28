@@ -11,6 +11,7 @@ mkDerivation {
     attoparsec base containers graphql-api template-haskell text
   ];
   executableHaskellDepends = [ base graphql-api text ];
+  testHaskellDepends = [ base ];
   homepage = "https://github.com/urbint/graphql-meta";
   description = "Generic and meta programming facilities for GraphQL";
   license = stdenv.lib.licenses.bsd3;
