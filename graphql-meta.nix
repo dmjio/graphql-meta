@@ -1,4 +1,5 @@
-{ mkDerivation, attoparsec, base, containers, graphql-api, stdenv
+{ mkDerivation, alex, array, attoparsec, base, containers, happy
+, hspec, prettyprinter, QuickCheck, quickcheck-instances, stdenv
 , template-haskell, text
 }:
 mkDerivation {
@@ -8,10 +9,14 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    attoparsec base containers graphql-api template-haskell text
+    array attoparsec base containers prettyprinter template-haskell
+    text
   ];
-  executableHaskellDepends = [ base graphql-api text ];
-  testHaskellDepends = [ base ];
+  libraryToolDepends = [ alex happy ];
+  executableHaskellDepends = [ base text ];
+  testHaskellDepends = [
+    base hspec QuickCheck quickcheck-instances
+  ];
   homepage = "https://github.com/urbint/graphql-meta";
   description = "Generic and meta programming facilities for GraphQL";
   license = stdenv.lib.licenses.bsd3;
