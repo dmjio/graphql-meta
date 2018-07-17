@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE TypeOperators         #-}
@@ -35,10 +34,8 @@ import           Data.Proxy
 import           Data.Text                       (Text, pack)
 import qualified Data.Text.IO                    as T
 import           Data.Monoid
-import           GraphQL.Internal.Syntax.Encoder
 --------------------------------------------------------------------------------
-import           GraphQL.Internal.Name
-import           GraphQL.Internal.Syntax.AST
+import           GraphQL.AST
 --------------------------------------------------------------------------------
 
 -- | Generically convert any product type into a 'ObjectTypeDefinition'
@@ -65,32 +62,35 @@ class GToObjectTypeDefinition (f :: * -> *) where
 emptyObjectTypeDef :: ObjectTypeDefinition
 emptyObjectTypeDef =
   ObjectTypeDefinition
+    mempty
     (Name mempty)
+    (ImplementsInterfaces [])
     mempty
-    mempty
+    (FieldsDefinition [])
 
 addName
-  :: Text
+  :: String
   -> ObjectTypeDefinition
   -> ObjectTypeDefinition
-addName name (ObjectTypeDefinition _ _ fields)
-  = ObjectTypeDefinition (Name name) [] fields
+addName name (ObjectTypeDefinition d _ ii ds fs)
+  = ObjectTypeDefinition d (Name name) ii ds fs
 
 addField
   :: FieldDefinition
   -> ObjectTypeDefinition
   -> ObjectTypeDefinition
-addField field (ObjectTypeDefinition name _ fields)
-  = ObjectTypeDefinition name [] (field:fields)
+addField field (ObjectTypeDefinition d name _ ds (FieldsDefinition fields))
+  = ObjectTypeDefinition d name (ImplementsInterfaces []) ds
+  $ FieldsDefinition (field:fields)
 
 combineFields
   :: ObjectTypeDefinition
   -> ObjectTypeDefinition
   -> ObjectTypeDefinition
 combineFields
-  (ObjectTypeDefinition _ _ as)
-  (ObjectTypeDefinition name _ bs)
-  = ObjectTypeDefinition name [] (as <> bs)
+  (ObjectTypeDefinition _ _ _ _ (FieldsDefinition as))
+  (ObjectTypeDefinition d name is ds (FieldsDefinition bs))
+  = ObjectTypeDefinition d name is ds $ FieldsDefinition (as <> bs)
 
 instance GToObjectTypeDefinition a => GToObjectTypeDefinition (D1 i a) where
   gToObjectTypeDefinition Proxy = gToObjectTypeDefinition (Proxy @ a)
@@ -98,16 +98,16 @@ instance GToObjectTypeDefinition a => GToObjectTypeDefinition (D1 i a) where
 instance (KnownSymbol name, GToObjectTypeDefinition a) =>
   GToObjectTypeDefinition (C1 (MetaCons name x y) a) where
     gToObjectTypeDefinition Proxy obj =
-      gToObjectTypeDefinition (Proxy @ a) (addName name obj)
+      gToObjectTypeDefinition (Proxy @a) (addName name obj)
         where
-          name = pack $ symbolVal (Proxy @ name)
+          name = symbolVal (Proxy @name)
 
 instance (ToGQLType gType, KnownSymbol name) =>
   GToObjectTypeDefinition (S1 (MetaSel (Just name) u s d) (K1 i gType)) where
     gToObjectTypeDefinition Proxy = addField field
         where
-          field = FieldDefinition fName [] gtype
-          fName = Name $ pack $ symbolVal (Proxy @ name)
+          field = FieldDefinition Nothing fName (ArgumentsDefinition []) gtype []
+          fName = Name $ symbolVal (Proxy @ name)
           gtype = toGQLType (Proxy @ gType)
 
 instance GToObjectTypeDefinition U1 where
@@ -151,11 +151,7 @@ instance ToNamed Bool where
 
 -- | Resolve Haskell types to GraphQL primitive types
 class ToGQLType a where
-#if !MIN_VERSION_graphql_api(0,3,0)
   toGQLType :: Proxy a -> Type
-#else
-  toGQLType :: Proxy a -> GType
-#endif
 
 instance ToGQLType a => ToGQLType [a] where
   toGQLType Proxy

@@ -2,7 +2,6 @@
 {-# LANGUAGE CPP                 #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE DeriveDataTypeable  #-}
 {-# LANGUAGE StandaloneDeriving  #-}
 {-# LANGUAGE TemplateHaskell     #-}
 --------------------------------------------------------------------------------
@@ -15,8 +14,9 @@
 --------------------------------------------------------------------------------
 module GraphQL.QQ
   ( -- * QuasiQuoters
-    schema
-  , query
+    query
+  -- , schema
+
     -- * Classes
   , ToExpr  (..)
   , ToField (..)
@@ -36,18 +36,27 @@ import           Data.Text                      (Text)
 import qualified Data.Text                      as T
 import           Language.Haskell.TH.Lib
 import           Language.Haskell.TH.Quote
-import           Language.Haskell.TH.Syntax
+import           Language.Haskell.TH.Syntax hiding (Name)
 import           Data.Text.Internal
-import           Unsafe.Coerce
 --------------------------------------------------------------------------------
-import qualified GraphQL.Internal.Name          as GQLName
-import           GraphQL.Internal.Syntax.AST
-import           GraphQL.Internal.Syntax.Parser
+import           GraphQL.AST
+import           GraphQL.Lexer
+import           GraphQL.Generic
+import           GraphQL.Parser
 --------------------------------------------------------------------------------
 
 -- | QuasiQuoter for GraphQL 'Schema' definitions
-schema :: QuasiQuoter
-schema = def { quoteExp = parseGQLSchema }
+-- schema :: QuasiQuoter
+-- schema = def { quoteExp = parseGQLSchema }
+
+-- | Parsing the GraphQL Schema
+-- parseGQLSchema
+--   :: String
+--   -> Q Exp
+-- parseGQLSchema
+--   = either fail (dataToExpQ (fmap liftText . cast))
+--   . parseOnly schemaDocument
+--   . T.pack
 
 -- | QuasiQuoter for GraphQL 'QueryDocument' definitions
 query :: QuasiQuoter
@@ -55,129 +64,127 @@ query = def { quoteExp = parseGQLQuery }
 
 def :: QuasiQuoter
 def = QuasiQuoter
-    { quoteExp = fail "quotExp: not implemented"
-    , quotePat = fail "quotPat: not implemented"
-    , quoteDec = fail "quotDec: not implemented"
+    { quoteExp  = fail "quotExp: not implemented"
+    , quotePat  = fail "quotPat: not implemented"
+    , quoteDec  = fail "quotDec: not implemented"
     , quoteType = fail "quotType: not implemented"
     }
 
-parseGQLSchema
-  :: String
-  -> Q Exp
-parseGQLSchema
-  = either fail (dataToExpQ (fmap liftText . cast))
-  . parseOnly schemaDocument
-  . T.pack
-
 parseGQLQuery
   :: String
   -> Q Exp
 parseGQLQuery
-  = either fail liftDataWithText
-  . parseOnly queryDocument
-  . T.pack
+  = either fail liftDataWithText . exeDef
   where
-    liftDataWithText :: QueryDocument -> Q Exp
-    liftDataWithText doc = do
-      scopeTable  <- makeTable (getVariables doc)
-      fieldsTable <- makeTable (getFields doc)
-      dataToExpQ (withText `extQ` goDoc scopeTable fieldsTable) doc
+    liftDataWithText :: ExecutableDefinition -> Q Exp
+    liftDataWithText edef = do
+      scopeTable  <- makeTable (getVariables edef)
+      fieldsTable <- makeTable (getFields edef)
+      dataToExpQ (withText `extQ` goExeDef scopeTable fieldsTable) edef
 
     extQ f g a = maybe (f a) g (cast a)
     withText a = liftText <$> cast a
 
-    goDoc scopeTable fieldsTable (QueryDocument defs) = do
-      newDefs <- traverse (goDefs scopeTable fieldsTable) defs
-      Just [| QueryDocument $(listE newDefs) |]
+    goExeDef scopeTable fieldsTable (DefinitionOperation opDef) = do
+      newDef <- goOpDef scopeTable fieldsTable opDef
+      Just [| DefinitionOperation $newDef |]
 
-    goDefs scopeTable fieldsTable (DefinitionOperation (Query node)) = do
-      newNode <- goNode scopeTable fieldsTable node
-      Just [| DefinitionOperation (Query $newNode) |]
+    goExeDef scopeTable fieldsTable (DefinitionFragment fragDef) = do
+      newDef <- goFragDef scopeTable fieldsTable fragDef
+      Just [| DefinitionFragment $newDef |]
 
-    goDefs scopeTable fieldsTable (DefinitionOperation (AnonymousQuery sels)) = do
+    goFragDef scopeTable fieldsTable (FragmentDefinition name typeCond dirs sels) = do
+      newDirs <- traverse (subDirs scopeTable) dirs
       newSels <- traverse (subFields scopeTable fieldsTable) sels
-      Just [| DefinitionOperation (AnonymousQuery $(listE newSels)) |]
+      Just [| DefinitionFragment name typeCond $(listE newDirs) $(listE newSels) |]
 
-    goGType gtype =
-      case gtype of
-        TypeNamed (NamedType (GQLName.Name n)) ->
-          Just [| TypeNamed $ NamedType $ GQLName.Name $(litE $ stringL $ T.unpack n) |]
-        TypeList (ListType anotherGType) ->
-          goGType anotherGType
-        TypeNonNull nonNullType ->
-          case nonNullType of
-            NonNullTypeNamed (NamedType (GQLName.Name n)) ->
-              Just [| TypeNamed $ NamedType $ GQLName.Name $(litE $ stringL $ T.unpack n) |]
-            NonNullTypeList (ListType anotherGType) ->
-              goGType anotherGType
+    goOpDef scopeTable fieldsTable (AnonymousQuery sels) = do
+      newSels <- traverse (subFields scopeTable fieldsTable) sels
+      Just [| AnonymousQuery $(listE newSels) |]
 
-    goNode scopeTable fieldsTable (Node maybeName vars dirs sels) = do
+    goOpDef scopeTable fieldsTable (OperationDefinition opType maybeName vars dirs sels) = do
       let newName = subMaybeName maybeName
       newVars <- traverse (goVarDefs scopeTable) vars
       newDirs <- traverse (subDirs scopeTable) dirs
       newSels <- traverse (subFields scopeTable fieldsTable) sels
-      Just [| Node $newName $(listE newVars) $(listE newDirs) $(listE newSels) |]
+      Just [| OperationDefinition opType $newName $(listE newVars) $(listE newDirs) $(listE newSels) |]
 
-    goVarDefs scopeTable (VariableDefinition (Variable (GQLName.Name n)) gtype defVal) = do
+    goGType gtype =
+      case gtype of
+        TypeNamed (NamedType (Name n)) ->
+          Just [| TypeNamed $ NamedType $ Name $(litE $ stringL n) |]
+        TypeList (ListType anotherGType) ->
+          goGType anotherGType
+        TypeNonNull nonNullType ->
+          case nonNullType of
+            NonNullTypeNamed (NamedType (Name n)) ->
+              Just [| TypeNamed $ NamedType $ Name $(litE $ stringL n) |]
+            NonNullTypeList (ListType anotherGType) ->
+              goGType anotherGType
+
+    goVarDefs scopeTable (VariableDefinition (Variable (Name n)) gtype defVal) = do
       newGType <- goGType gtype
-      newVar <- Just [| GQLName.Name $(litE $ stringL $ T.unpack n) |]
+      newVar <- Just [| Name $(litE $ stringL n) |]
       newVal <- goDefVal scopeTable defVal
       Just [| VariableDefinition (Variable $newVar) $newGType $newVal |]
 
     goDefVal _ Nothing = Just [| Nothing |]
-    goDefVal scopeTable (Just val) = do
+    goDefVal scopeTable (Just (DefaultValue val)) = do
       newVal <- subVars scopeTable val
-      Just [| Just $newVal |]
+      Just [| Just (DefaultValue $newVal) |]
 
-    subVars scopeTable (ValueVariable (Variable (GQLName.Name k))) =
-      case M.lookup (T.unpack k) scopeTable of
-        Just True -> Just [| toExpr $(pure $ VarE (mkName $ T.unpack k)) |]
-        _ -> Just [| toExpr ($(litE $ stringL $ T.unpack k) :: String) |]
+    subVars scopeTable (ValueVariable (Variable (Name k))) =
+      case M.lookup k scopeTable of
+        Just True -> Just [| toExpr $(pure $ VarE (mkName k)) |]
+        _ -> Just [| toExpr ($(litE $ stringL k) :: String) |]
 
-    subVars scopeTable (ValueString (StringValue k)) =
-      case M.lookup (T.unpack k) scopeTable of
-        Just True -> Just [| toExpr $(pure $ VarE (mkName $ T.unpack k)) |]
-        _ -> Just [| toExpr ($(litE $ stringL $ T.unpack k) :: String) |]
+    subVars scopeTable (ValueString k) =
+      case M.lookup k scopeTable of
+        Just True -> Just [| toExpr $(pure $ VarE (mkName k)) |]
+        _ -> Just [| toExpr ($(litE $ stringL k) :: String) |]
 
     subVars scopeTable (ValueInt i) = Just [| ValueInt i |]
     subVars scopeTable (ValueFloat f) = Just [| ValueFloat f |]
     subVars scopeTable (ValueBoolean b) = Just [| ValueBoolean b |]
     subVars scopeTable ValueNull = Just [| ValueNull |]
-    subVars scopeTable (ValueEnum (GQLName.Name n)) =
-      Just [| ValueEnum $ GQLName.Name $(litE $ stringL $ T.unpack n) |]
-    subVars scopeTable (ValueList (ListValue vs)) = do
+    subVars scopeTable (ValueEnum (EnumValue (Name n))) =
+      Just [| ValueEnum $ EnumValue $ Name $(litE $ stringL n) |]
+    subVars scopeTable (ValueList vs) = do
       newVals <- traverse (subVars scopeTable) vs
       Just [| ValueList $(listE newVals) |]
-    subVars scopeTable (ValueObject (ObjectValue os)) = do
+    subVars scopeTable (ValueObject os) = do
       newObjs <- traverse (goObjectField scopeTable) os
       Just [| ValueObject $ ObjectValue $(listE newObjs) |]
 
-    goObjectField scopeTable (ObjectField (GQLName.Name x) v) = do
+    goObjectField scopeTable (ObjectField (Name x) v) = do
       newVar <- subVars scopeTable v
-      Just [| ObjectField (GQLName.Name $(litE $ stringL $ T.unpack x)) $newVar |]
+      Just [| ObjectField (Name $(litE $ stringL x)) $newVar |]
 
-    subArgs scopeTable (Argument (GQLName.Name n) var) = do
+    subArgs scopeTable (Argument (Name n) var) = do
       newVar <- join $ subVars scopeTable <$> Just var
-      Just [| Argument (GQLName.Name $(litE $ stringL $ T.unpack n)) $newVar |]
+      Just [| Argument (Name $(litE $ stringL n)) $newVar |]
 
-    subMaybeName (Just (GQLName.Name n)) = [| Just $ GQLName.Name ($(litE $ stringL $ T.unpack n)) |]
+    subMaybeName (Just (Name n)) = [| Just $ Name ($(litE $ stringL n)) |]
     subMaybeName Nothing = [| Nothing |]
 
-    subName (GQLName.Name n) = [| GQLName.Name $(litE $ stringL $ T.unpack n) |]
+    subMaybeAlias (Just (Alias (Name n))) = [| Just $ Alias $ Name ($(litE $ stringL n)) |]
+    subMaybeAlias Nothing = [| Nothing |]
+
+    subName (Name n) = [| Name $(litE $ stringL n) |]
 
     subDirs scopeTable (Directive name args) = do
       let newName = subName name
       newArgs <- traverse (subArgs scopeTable) args
       Just [| Directive $newName $(listE newArgs) |]
 
-    subFields scopeTable fieldsTable (SelectionField (Field maybeAlias (GQLName.Name n) args dirs sels)) =
-      case M.lookup (T.unpack n) fieldsTable of
+    subFields scopeTable fieldsTable (SelectionField (Field maybeAlias (Name n) args dirs sels)) =
+      case M.lookup n fieldsTable of
         Just True -> do
           newSels <- traverse (subFields scopeTable fieldsTable) sels
           newArgs <- traverse (subArgs scopeTable) args
           newDirs <- traverse (subDirs scopeTable) dirs
-          let newAlias = subMaybeName maybeAlias
-          Just [| toField $(pure $ VarE (mkName $ T.unpack n))
+          let newAlias = subMaybeAlias maybeAlias
+          Just [| toField $(pure $ VarE (mkName n))
                    $newAlias
                    $(listE newArgs)
                    $(listE newDirs)
@@ -187,26 +194,26 @@ parseGQLQuery
           newSels <- traverse (subFields scopeTable fieldsTable) sels
           newArgs <- traverse (subArgs scopeTable) args
           newDirs <- traverse (subDirs scopeTable) dirs
-          let newAlias = subMaybeName maybeAlias
-          Just [| toField ($(litE $ stringL $ T.unpack n) :: String)
+          let newAlias = subMaybeAlias maybeAlias
+          Just [| toField ($(litE $ stringL n) :: String)
                    $newAlias
                    $(listE newArgs)
                    $(listE newDirs)
                    $(listE newSels)
                 |]
-    subFields scopeTable fieldsTable (SelectionFragmentSpread (FragmentSpread (GQLName.Name x) dirs)) = do
+    subFields scopeTable fieldsTable (SelectionFragmentSpread (FragmentSpread (Name x) dirs)) = do
       newDirs <- traverse (subDirs scopeTable) dirs
       Just [| SelectionFragmentSpread
                 (FragmentSpread
-                   (GQLName.Name $(litE $ stringL $ T.unpack x))
+                   (Name $(litE $ stringL x))
                    $(listE newDirs)) |]
     subFields scopeTable fieldsTable (SelectionInlineFragment (InlineFragment maybeTypeCond dirs sels)) = do
       newDirs <- traverse (subDirs scopeTable) dirs
       newSels <- traverse (subFields scopeTable fieldsTable) sels
       let newTypeCond = case maybeTypeCond of
             Nothing -> [| Nothing |]
-            Just (NamedType (GQLName.Name c)) ->
-              [| Just $ NamedType $ GQLName.Name $(litE $ stringL $ T.unpack c) |]
+            Just (TypeCondition (NamedType (Name c))) ->
+              [| Just $ NamedType $ Name $(litE $ stringL c) |]
       Just [| SelectionInlineFragment
                 (InlineFragment
                    $newTypeCond
@@ -238,11 +245,13 @@ class ToField a where
 
 instance ToField Text where
   toField s maybeAlias args dirs sels =
-    SelectionField $ Field maybeAlias (GQLName.Name s) args dirs sels
+    SelectionField $ Field maybeAlias (newName s) args dirs sels
+      where
+        newName = Name . T.unpack
 
 instance ToField String where
   toField s maybeAlias args dirs sels =
-    SelectionField $ Field maybeAlias (GQLName.Name $ T.pack s) args dirs sels
+    SelectionField $ Field maybeAlias (Name s) args dirs sels
 
 -- | Used to convert Haskell metavariables into GraphQL Values
 class ToExpr a where
@@ -261,16 +270,16 @@ instance ToExpr Double where
   toExpr = ValueFloat
 
 instance ToExpr Text where
-  toExpr = ValueString . StringValue
+  toExpr = ValueString . T.unpack
 
 instance ToExpr a => ToExpr [a] where
-  toExpr = ValueList . ListValue . map toExpr
+  toExpr = ValueList . map toExpr
 
 instance ToExpr a => ToExpr (Map String a) where
   toExpr x =
-    ValueObject . ObjectValue $ do
+    ValueObject $ do
       (k,v) <- M.toList x
-      let name = GQLName.Name (T.pack k)
+      let name = Name k
       pure $ ObjectField name (toExpr v)
 
 instance ToExpr a => ToExpr (Maybe a) where
@@ -282,99 +291,51 @@ instance (ToExpr b, ToExpr a) => ToExpr (Either a b) where
   toExpr (Right x) = toExpr x
 
 instance {-# overlaps #-} ToExpr String where
-  toExpr = ValueString . StringValue . T.pack
+  toExpr = ValueString
 
 getVariables
-  :: QueryDocument
+  :: ExecutableDefinition
   -> Set String
-getVariables = go
+getVariables = goDef
   where
-    go (QueryDocument defs)
-      = S.unions $ goDef <$> defs
-    goDef (DefinitionOperation (Query (Node _ vars _ selSets)))
-      = S.unions $ mconcat
+    goDef (DefinitionOperation opDef) = goOpDef opDef
+    goOpDef (OperationDefinition _ _ vars _ selSets) =
+      S.unions $ mconcat
           [ goSelSet <$> selSets
           , goVar <$> vars
           ]
-    goDef (DefinitionOperation (AnonymousQuery selSets))
+    goOpDef (AnonymousQuery selSets)
       = S.unions $ goSelSet <$> selSets
-    goDef _ = mempty
     goSelSet (SelectionField (Field _ _ args _ selSets))
       = S.unions $ mconcat
           [ goSelSet <$> selSets
           , goArg <$> args
           ]
     goSelSet _ = mempty
-    goArg (Argument _ (ValueVariable (Variable (GQLName.Name v))))
-      = S.singleton (T.unpack v)
+    goArg (Argument _ (ValueVariable (Variable (Name v))))
+      = S.singleton v
     goArg _ = mempty
-    goVar (VariableDefinition (Variable (GQLName.Name v)) _ _) =
-      S.singleton (T.unpack v)
+    goVar (VariableDefinition (Variable (Name v)) _ _) =
+      S.singleton v
 
 getFields
-  :: QueryDocument
+  :: ExecutableDefinition
   -> Set String
 getFields = go
   where
-    go (QueryDocument defs)
-      = S.unions $ goDef <$> defs
-    goDef (DefinitionOperation (Query (Node _ vars _ selSets)))
-      = S.unions (goSelSet <$> selSets)
-    goDef (DefinitionOperation (AnonymousQuery selSets))
-      = S.unions (goSelSet <$> selSets)
-    goDef _ = mempty
-    goSelSet (SelectionField (Field _ (GQLName.Name n) _ _ selSets))
-      = S.unions (goSelSet <$> selSets) <> S.singleton (T.unpack n)
+    go (DefinitionOperation (AnonymousQuery sels))
+      = S.unions (goSelSet <$> sels)
+    go (DefinitionOperation (OperationDefinition _ _ _ _ sels))
+      = S.unions (goSelSet <$> sels)
+    goSelSet (SelectionField (Field _ (Name n) _ _ sels))
+      = S.unions (goSelSet <$> sels) <> S.singleton n
 
-instance Lift QueryDocument
-instance Lift SchemaDocument
+instance Lift ExecutableDefinition
+instance Lift OperationType
+instance Lift TypeCondition
 instance Lift Selection
 instance Lift Directive
 instance Lift Argument
-instance Lift GQLName.Name
+instance Lift Name
 instance Lift T.Text
 instance Lift Value
-#if !MIN_VERSION_graphql_api(0,3,0)
-instance Lift GraphQL.Internal.Syntax.AST.Type
-#else
-instance Lift GType
-#endif
-deriving instance Data SchemaDocument
-deriving instance Data TypeDefinition
-deriving instance Data ObjectTypeDefinition
-deriving instance Data InterfaceTypeDefinition
-deriving instance Data FieldDefinition
-deriving instance Data UnionTypeDefinition
-deriving instance Data ScalarTypeDefinition
-deriving instance Data EnumTypeDefinition
-deriving instance Data InputObjectTypeDefinition
-deriving instance Data TypeExtensionDefinition
-deriving instance Data InputValueDefinition
-deriving instance Data EnumValueDefinition
-deriving instance Data QueryDocument
-deriving instance Data Definition
-deriving instance Data FragmentDefinition
-deriving instance Data Selection
-deriving instance Data Directive
-deriving instance Data TypeCondition
-deriving instance Data GQLName.Name
-deriving instance Data OperationDefinition
-deriving instance Data VariableDefinition
-deriving instance Data Node
-deriving instance Data Value
-#if !MIN_VERSION_graphql_api(0,3,0)
-deriving instance Data GraphQL.Internal.Syntax.AST.Type
-#else
-deriving instance Data GType
-#endif
-deriving instance Data Field
-deriving instance Data FragmentSpread
-deriving instance Data Argument
-deriving instance Data InlineFragment
-deriving instance Data Variable
-deriving instance Data StringValue
-deriving instance Data ListValue
-deriving instance Data ListType
-deriving instance Data ObjectValue
-deriving instance Data NonNullType
-deriving instance Data ObjectField
