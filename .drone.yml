@@ -49,7 +49,7 @@ pipeline:
       - STACK_ROOT=/drone/src/github.com/urbint/graphql-meta/.stack
     commands:
       - stack install hlint
-      - stack exec -- hlint src test app
+      - stack exec -- hlint src
     secrets: [ docker_username, docker_password ]
 
   bench:

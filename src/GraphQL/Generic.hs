@@ -1,5 +1,5 @@
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE KindSignatures        #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -8,9 +8,6 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE DeriveDataTypeable    #-}
-{-# LANGUAGE StandaloneDeriving    #-}
-{-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE DataKinds             #-}
 --------------------------------------------------------------------------------
 -- |
@@ -32,8 +29,6 @@ import           GHC.Generics
 import           GHC.TypeLits
 import           Data.Proxy
 import           Data.Text    (Text, pack)
-import qualified Data.Text.IO as T
-import           Data.Monoid
 --------------------------------------------------------------------------------
 import           GraphQL.AST
 --------------------------------------------------------------------------------
@@ -96,14 +91,14 @@ instance GToObjectTypeDefinition a => GToObjectTypeDefinition (D1 i a) where
   gToObjectTypeDefinition Proxy = gToObjectTypeDefinition (Proxy @ a)
 
 instance (KnownSymbol name, GToObjectTypeDefinition a) =>
-  GToObjectTypeDefinition (C1 (MetaCons name x y) a) where
+  GToObjectTypeDefinition (C1 ('MetaCons name x y) a) where
     gToObjectTypeDefinition Proxy obj =
       gToObjectTypeDefinition (Proxy @a) (addName name obj)
         where
           name = pack $ symbolVal (Proxy @name)
 
 instance (ToGQLType gType, KnownSymbol name) =>
-  GToObjectTypeDefinition (S1 (MetaSel (Just name) u s d) (K1 i gType)) where
+  GToObjectTypeDefinition (S1 ('MetaSel ('Just name) u s d) (K1 i gType)) where
     gToObjectTypeDefinition Proxy = addField field
         where
           field = FieldDefinition Nothing fName (ArgumentsDefinition []) gtype []

@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module      : Main
@@ -23,7 +21,7 @@ main :: IO ()
 main = hspec (lexerSpec >> parserSpec) >> roundTrip
   where
     roundTrip :: IO ()
-    roundTrip = do
-      quickCheckWith stdArgs { maxSize = 100000, maxSuccess = 100000 } $ do
+    roundTrip =
+      quickCheckWith stdArgs { maxSize = 100000, maxSuccess = 100000 } $
         forAll genDocument $ \doc ->
            parseDocument (show (printDocument doc)) === Right doc

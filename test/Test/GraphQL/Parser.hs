@@ -1,10 +1,9 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Test.GraphQL.Parser where
 
 import           Data.Char
 import           Data.Either
-import           Data.Monoid
 import           Test.Hspec
 import           Test.QuickCheck
 
@@ -37,12 +36,12 @@ parserSpec = do
        name@(Name nameValue) <- generate genName
        value (T.unpack nameValue) `shouldBe`
          Right (ValueEnum (EnumValue name))
-    it "Should parse an ObjectList into a ValueObject" $ do
+    it "Should parse an ObjectList into a ValueObject" $
        value "{ hey : 1, boo : 2 }" `shouldBe`
          Right (ValueObject [ ObjectField (Name "hey") (ValueInt 1)
                             , ObjectField (Name "boo") (ValueInt 2)
                             ])
-    it "Should parse a list into a ValueList" $ do
+    it "Should parse a list into a ValueList" $
       value "[2, [], [3, [4 5 []]], { hey : { foo : \"there\" } }, {}]" `shouldBe`
         Right (ValueList [ ValueInt 2
                          , ValueList []
@@ -53,18 +52,18 @@ parserSpec = do
                          ])
 
   describe "Should parse a SelectionSet" $ do
-    it "Should parse a Selection Set w/o Aliases" $ do
+    it "Should parse a Selection Set w/o Aliases" $
       selSet "{building {floorCount}}" `shouldBe`
         Right [ SelectionField (Field Nothing (Name "building") [] [] [
           SelectionField (Field Nothing (Name "floorCount") [] [] []) ])
         ]
 
-    it "Should parse a Selection Set w/ Aliases" $ do
+    it "Should parse a Selection Set w/ Aliases" $
       selSet "{foo:building {okedoke: floorCount}}" `shouldBe` Right
         [ SelectionField (Field (Just (Alias (Name "foo"))) (Name "building") [] [] [
            SelectionField (Field (Just (Alias (Name "okedoke"))) (Name "floorCount") [] [] []) ]) ]
 
-    it "Should parse a Selection Set w/ Arguments" $ do
+    it "Should parse a Selection Set w/ Arguments" $
       selSet "{building {floorCount (id: 3, foo: \"bar\")}}" `shouldBe` Right
         [ SelectionField (Field Nothing (Name "building") [] [] [
            SelectionField (Field Nothing (Name "floorCount") [
@@ -72,23 +71,23 @@ parserSpec = do
            , Argument (Name "foo") (ValueString "bar")
            ] [] []) ]) ]
 
-    it "Should parse a Selection Set w/ Directives" $ do
+    it "Should parse a Selection Set w/ Directives" $
       selSet "{ building @height(foo: 4) }" `shouldBe` Right
         [ SelectionField (Field Nothing (Name "building") []
           [ Directive (Name "height") [ Argument (Name "foo") (ValueInt 4) ]] []) ]
 
-    it "Should parse a Selection Set w/ argumentless Directives " $ do
+    it "Should parse a Selection Set w/ argumentless Directives " $
       selSet "{ building @height }" `shouldBe` Right
         [ SelectionField (Field Nothing (Name "building") []
           [ Directive (Name "height") mempty] []) ]
 
   describe "Should parse an OperationDefinition" $ do
-    it "Should parse an OperationDefinition with VariableDefinition" $ do
+    it "Should parse an OperationDefinition with VariableDefinition" $
       opDef "{building {floorCount}}" `shouldBe` Right (AnonymousQuery
         [ SelectionField (Field Nothing (Name "building") [] [] [
           SelectionField (Field Nothing (Name "floorCount") [] [] []) ]) ])
 
-    it "Should parse a Named OperationDefinition" $ do
+    it "Should parse a Named OperationDefinition" $
       opDef "query Building {building {floorCount}}" `shouldBe` Right
         (OperationDefinition Query (Just $ Name "Building") [] []
          [ SelectionField (Field Nothing (Name "building") [] [] [
@@ -122,8 +121,8 @@ parserSpec = do
                  Argument (Name "size") (ValueInt 50)] [] [])])))
 
     it "Should parse a FragmentSpread" $ do
-      let spread = "query withFragments { user(id: 4) { friends(first: 10)\
-             \{ ...friendFields } } }"
+      let spread = "query withFragments { user(id: 4)"
+                ++ "{ friends(first: 10){ ...friendFields } } }"
       gDef spread `shouldBe` Right
         (DefinitionExecutable (DefinitionOperation (OperationDefinition Query
           (Just (Name "withFragments")) [] [] [
@@ -135,9 +134,9 @@ parserSpec = do
                       [])])])])))
 
     it "Should parse an InlineFragment" $ do
-      let inlineFrag = "query inlineFragmentTyping { profiles(handles:\
-                       \[\"zuck\", \"cocacola\"]) { ... \
-                       \on User{friends{count}}}}"
+      let inlineFrag = "query inlineFragmentTyping { profiles(handles:"
+                    ++ "[\"zuck\", \"cocacola\"]) { ... "
+                    ++ "on User{friends{count}}}}"
       gDef inlineFrag `shouldBe` Right
         (DefinitionExecutable (DefinitionOperation (OperationDefinition Query
           (Just (Name "inlineFragmentTyping")) [] [] [
@@ -150,19 +149,19 @@ parserSpec = do
                          SelectionField (Field Nothing (Name "count") [] [] [])]
                            )])])])))
 
-  describe "Should parse a Definition" $ do
+  describe "Should parse a Definition" $
     it "Should parse an ExecutableDefinition" $ do
-      let varDef = VariableDefinition (Variable (Name "id")) typ defVal
-          typ = TypeNamed (NamedType (Name "Int"))
-          defVal = Just (DefaultValue (ValueInt 4))
-          oDef = OperationDefinition Query (Just $ Name "Building") [varDef] []
-            ([ SelectionField (Field Nothing (Name "building") [] [] [
+      let varDefs = VariableDefinition (Variable (Name "id")) typ' defVal'
+          typ' = TypeNamed (NamedType (Name "Int"))
+          defVal' = Just (DefaultValue (ValueInt 4))
+          oDef' = OperationDefinition Query (Just $ Name "Building") [varDefs] []
+             [ SelectionField (Field Nothing (Name "building") [] [] [
                SelectionField (Field Nothing (Name "floorCount") [] [] []) ])
-             ])
+             ]
       gDef "query Building ($id: Int = 4) {building {floorCount}}" `shouldBe`
-        Right (DefinitionExecutable (DefinitionOperation oDef))
+        Right (DefinitionExecutable (DefinitionOperation oDef'))
 
-  describe "Should parse anonymous queries" $ do
+  describe "Should parse anonymous queries" $
     it "Should parse two consecutive fields" $ do
       let oDef = AnonymousQuery sels
           sels = [ SelectionField (Field Nothing (Name "dog") [] [] [])
@@ -170,19 +169,19 @@ parserSpec = do
                  ]
       gDef "{ dog, cat }" `shouldBe` Right
         (DefinitionExecutable (DefinitionOperation oDef))
-  describe "Should fail to parse a Definition purely" $ do
+  describe "Should fail to parse a Definition purely" $
     it "Should fail to parse" $
       gDef "{{building {floorCount}}" `shouldSatisfy` isLeft
 
   describe "Should parse Type System Extensions" $ do
-    it "Should parse Scalar Type Extensions" $ do
+    it "Should parse Scalar Type Extensions" $
       gDef "extend scalar Foo @lol" `shouldBe` Right
         (ExtensionTypeSystem
            $ ExtensionType
            $ ExtensionScalarType
            $ ScalarTypeExtension (Name "Foo")
            [ Directive (Name "lol") [] ])
-    it "Should parse Scalar Type Extensions w/ Arguments" $ do
+    it "Should parse Scalar Type Extensions w/ Arguments" $
       gDef "extend scalar Foo @lol(hey: 234)" `shouldBe` Right
         (ExtensionTypeSystem
            $ ExtensionType
@@ -190,8 +189,8 @@ parserSpec = do
            $ ScalarTypeExtension (Name "Foo")
            [ Directive (Name "lol") [Argument (Name "hey") (ValueInt 234)]])
 
-  describe "Should parse Type Synstem Definitions" $ do
-    it "Should parse Schema Definitions" $ do
+  describe "Should parse Type Synstem Definitions" $
+    it "Should parse Schema Definitions" $
       gDef "schema { query : Query, mutation: Mutation }" `shouldBe` Right
         (DefinitionTypeSystem
            $ DefinitionSchema

@@ -1,9 +1,10 @@
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE CPP                 #-}
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE StandaloneDeriving  #-}
-{-# LANGUAGE TemplateHaskell     #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE CPP                  #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE StandaloneDeriving   #-}
+{-# LANGUAGE TemplateHaskell      #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module      : GraphQL.QQ
@@ -23,17 +24,13 @@ module GraphQL.QQ
   ) where
 --------------------------------------------------------------------------------
 import           Control.Monad
-import           Control.Applicative
-import           Data.Monoid
-import           Data.Attoparsec.Text
 import           Data.Data
-import qualified Data.Map                       as M
-import           Data.Map                       (Map)
+import qualified Data.Map                   as M
+import           Data.Map                   (Map)
 import           Data.Maybe
-import           Data.Set                       (Set)
-import qualified Data.Set                       as S
-import           Data.Text                      (Text)
-import qualified Data.Text                      as T
+import           Data.Set                   (Set)
+import qualified Data.Set                   as S
+import qualified Data.Text                  as T
 import           Language.Haskell.TH.Lib
 import           Language.Haskell.TH.Quote
 import           Language.Haskell.TH.Syntax hiding (Name)
@@ -41,7 +38,6 @@ import           Data.Text.Internal
 --------------------------------------------------------------------------------
 import           GraphQL.AST
 import           GraphQL.Lexer
-import           GraphQL.Generic
 import           GraphQL.Parser
 --------------------------------------------------------------------------------
 
@@ -85,8 +81,8 @@ parseGQLQuery
     extQ f g a = maybe (f a) g (cast a)
     withText a = liftText <$> cast a
 
-    goExeDef scopeTable fieldsTable (DefinitionOperation opDef) = do
-      newDef <- goOpDef scopeTable fieldsTable opDef
+    goExeDef scopeTable fieldsTable (DefinitionOperation oDef) = do
+      newDef <- goOpDef scopeTable fieldsTable oDef
       Just [| DefinitionOperation $newDef |]
 
     goExeDef scopeTable fieldsTable (DefinitionFragment fragDef) = do
@@ -103,11 +99,11 @@ parseGQLQuery
       Just [| AnonymousQuery $(listE newSels) |]
 
     goOpDef scopeTable fieldsTable (OperationDefinition opType maybeName vars dirs sels) = do
-      let newName = subMaybeName maybeName
+      let newName' = subMaybeName maybeName
       newVars <- traverse (goVarDefs scopeTable) vars
       newDirs <- traverse (subDirs scopeTable) dirs
       newSels <- traverse (subFields scopeTable fieldsTable) sels
-      Just [| OperationDefinition opType $newName $(listE newVars) $(listE newDirs) $(listE newSels) |]
+      Just [| OperationDefinition opType $newName' $(listE newVars) $(listE newDirs) $(listE newSels) |]
 
     goGType gtype =
       case gtype of
@@ -143,11 +139,11 @@ parseGQLQuery
         Just True -> Just [| toExpr $(pure $ VarE (mkName $ T.unpack k)) |]
         _ -> Just [| toExpr ($(litE $ stringL $ T.unpack k) :: String) |]
 
-    subVars scopeTable (ValueInt i) = Just [| ValueInt i |]
-    subVars scopeTable (ValueFloat f) = Just [| ValueFloat f |]
-    subVars scopeTable (ValueBoolean b) = Just [| ValueBoolean b |]
-    subVars scopeTable ValueNull = Just [| ValueNull |]
-    subVars scopeTable (ValueEnum (EnumValue (Name n))) =
+    subVars _ (ValueInt i) = Just [| ValueInt i |]
+    subVars _ (ValueFloat f) = Just [| ValueFloat f |]
+    subVars _ (ValueBoolean b) = Just [| ValueBoolean b |]
+    subVars _ ValueNull = Just [| ValueNull |]
+    subVars _ (ValueEnum (EnumValue (Name n))) =
       Just [| ValueEnum $ EnumValue $ Name $(litE $ stringL $ T.unpack n) |]
     subVars scopeTable (ValueList vs) = do
       newVals <- traverse (subVars scopeTable) vs
@@ -161,47 +157,43 @@ parseGQLQuery
       Just [| ObjectField (Name $(litE $ stringL $ T.unpack x)) $newVar |]
 
     subArgs scopeTable (Argument (Name n) var) = do
-      newVar <- join $ subVars scopeTable <$> Just var
+      newVar <- subVars scopeTable =<< Just var
       Just [| Argument (Name $(litE $ stringL $ T.unpack n)) $newVar |]
 
-    subMaybeName (Just (Name n)) = [| Just $ Name ($(litE $ stringL $ T.unpack n)) |]
+    subMaybeName (Just (Name n)) = [| Just $ Name $(litE $ stringL $ T.unpack n) |]
     subMaybeName Nothing = [| Nothing |]
 
-    subMaybeAlias (Just (Alias (Name n))) = [| Just $ Alias $ Name ($(litE $ stringL $ T.unpack n)) |]
+    subMaybeAlias (Just (Alias (Name n))) = [| Just $ Alias $ Name $(litE $ stringL $ T.unpack n) |]
     subMaybeAlias Nothing = [| Nothing |]
 
     subName (Name n) = [| Name $(litE $ stringL $ T.unpack n) |]
 
     subDirs scopeTable (Directive name args) = do
-      let newName = subName name
+      let newName' = subName name
       newArgs <- traverse (subArgs scopeTable) args
-      Just [| Directive $newName $(listE newArgs) |]
+      Just [| Directive $newName' $(listE newArgs) |]
 
-    subFields scopeTable fieldsTable (SelectionField (Field maybeAlias (Name n) args dirs sels)) =
+    subFields scopeTable fieldsTable (SelectionField (Field maybeAlias (Name n) args dirs sels)) = do
+      newSels <- traverse (subFields scopeTable fieldsTable) sels
+      newArgs <- traverse (subArgs scopeTable) args
+      newDirs <- traverse (subDirs scopeTable) dirs
+      let newAlias = subMaybeAlias maybeAlias
       case M.lookup n fieldsTable of
-        Just True -> do
-          newSels <- traverse (subFields scopeTable fieldsTable) sels
-          newArgs <- traverse (subArgs scopeTable) args
-          newDirs <- traverse (subDirs scopeTable) dirs
-          let newAlias = subMaybeAlias maybeAlias
+        Just True ->
           Just [| toField $(pure $ VarE (mkName $ T.unpack n))
                    $newAlias
                    $(listE newArgs)
                    $(listE newDirs)
                    $(listE newSels)
                 |]
-        _ -> do
-          newSels <- traverse (subFields scopeTable fieldsTable) sels
-          newArgs <- traverse (subArgs scopeTable) args
-          newDirs <- traverse (subDirs scopeTable) dirs
-          let newAlias = subMaybeAlias maybeAlias
+        _ ->
           Just [| toField ($(litE $ stringL $ T.unpack n) :: String)
                    $newAlias
                    $(listE newArgs)
                    $(listE newDirs)
                    $(listE newSels)
                 |]
-    subFields scopeTable fieldsTable (SelectionFragmentSpread (FragmentSpread (Name x) dirs)) = do
+    subFields scopeTable _ (SelectionFragmentSpread (FragmentSpread (Name x) dirs)) = do
       newDirs <- traverse (subDirs scopeTable) dirs
       Just [| SelectionFragmentSpread
                 (FragmentSpread
@@ -224,7 +216,7 @@ parseGQLQuery
 
 makeTable :: S.Set Text -> Q (Map Text Bool)
 makeTable xs = M.unions <$> do
-  flip traverse (S.toList xs) $ \x -> do
+  forM (S.toList xs) $ \x -> do
     result <- lookupValueName (T.unpack x)
     let inScope = isJust result
     pure $ if inScope
@@ -296,7 +288,8 @@ getVariables
   -> Set Text
 getVariables = goDef
   where
-    goDef (DefinitionOperation opDef) = goOpDef opDef
+    goDef (DefinitionOperation oDef) = goOpDef oDef
+    goDef (DefinitionFragment _) = mempty
     goOpDef (OperationDefinition _ _ vars _ selSets) =
       S.unions $ mconcat
           [ goSelSet <$> selSets
@@ -321,12 +314,14 @@ getFields
   -> Set Text
 getFields = go
   where
+    go (DefinitionFragment _) = mempty
     go (DefinitionOperation (AnonymousQuery sels))
       = S.unions (goSelSet <$> sels)
     go (DefinitionOperation (OperationDefinition _ _ _ _ sels))
       = S.unions (goSelSet <$> sels)
     goSelSet (SelectionField (Field _ (Name n) _ _ sels))
       = S.unions (goSelSet <$> sels) <> S.singleton n
+    goSelSet _ = mempty
 
 instance Lift ExecutableDefinition
 instance Lift OperationType
