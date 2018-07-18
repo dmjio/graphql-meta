@@ -1,17 +1,19 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Test.GraphQL.Parser where
 
-import Data.Char
-import Data.Either
-import Data.Monoid
-import Test.Hspec
-import Test.QuickCheck
+import           Data.Char
+import           Data.Either
+import           Data.Monoid
+import           Test.Hspec
+import           Test.QuickCheck
 
-import GraphQL.Lexer
-import GraphQL.Parser
-import GraphQL.AST
+import qualified Data.Text        as T
+import           GraphQL.AST
+import           GraphQL.Lexer
+import           GraphQL.Parser
 
-import Test.GraphQL.Gen
+import           Test.GraphQL.Gen
 
 parserSpec :: Spec
 parserSpec = do
@@ -29,11 +31,11 @@ parserSpec = do
       value "\"hey\"" `shouldBe` Right (ValueString "hey")
     it "Should parse a float into a ValueVariable" $ property $ do
        name@(Name nameValue) <- generate genName
-       value ("$" <> nameValue) `shouldBe`
+       value (T.unpack ("$" <> nameValue)) `shouldBe`
          Right (ValueVariable (Variable name))
     it "Should parse a Name into a ValueEnum" $ property $ do
        name@(Name nameValue) <- generate genName
-       value nameValue `shouldBe`
+       value (T.unpack nameValue) `shouldBe`
          Right (ValueEnum (EnumValue name))
     it "Should parse an ObjectList into a ValueObject" $ do
        value "{ hey : 1, boo : 2 }" `shouldBe`

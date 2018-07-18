@@ -26,6 +26,7 @@ import           Text.Read
 import           Data.Data
 import           GHC.Generics
 import           Data.Typeable
+import           Data.Text (Text, pack)
 --------------------------------------------------------------------------------
 }
 
@@ -127,13 +128,26 @@ $comma = \,
   | "INPUT_OBJECT"
   | "INPUT_FIELD_DEFINITION"
 
+@reserved
+  = "input"
+  | "implements"
+  | "extend"
+  | "fragment"
+  | "type"
+  | "enum"
+  | "on"
+  | "directive"
+  | "scalar"
+  | "schema"
+
 tokens :-
   @ignored ;
   @intToken { \s ->
     maybe (TokenError $ ConversionError "Not a valid int" s) TokenInt (readMaybe s) }
   @floatToken { \s ->
     maybe (TokenError $ ConversionError "Not a valid float" s) TokenFloat (readMaybe s) }
-  @stringToken { TokenString . processString }
+  @stringToken { TokenString . pack . processString }
+  @reserved { TokenReserved }
   @punctuator { TokenPunctuator }
   @nullToken { \s -> case s of
     "null" -> TokenNull
@@ -165,7 +179,7 @@ tokens :-
       Just r -> TokenTypeSystemDirectiveLocation r
       Nothing -> TokenError (ConversionError "Invalid TypeSystemDirectiveLocation" s)
   }
-  @name { TokenName }
+  @name { TokenName . pack }
 {
 -- | A GraphQL 'Operation' type
 data OperationType
@@ -204,8 +218,9 @@ data TypeSystemDirectiveLocation
 data Token
   = TokenInt Int
   | TokenFloat Double
-  | TokenName String
-  | TokenString String
+  | TokenName Text
+  | TokenString Text
+  | TokenReserved String
   | TokenPunctuator String
   | TokenBool Bool
   | TokenError Error

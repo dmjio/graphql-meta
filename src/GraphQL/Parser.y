@@ -22,7 +22,6 @@ module GraphQL.Parser
 --------------------------------------------------------------------------------
 import GraphQL.Lexer
 import GraphQL.AST
-import Debug.Trace
 --------------------------------------------------------------------------------
 }
 
@@ -42,18 +41,18 @@ import Debug.Trace
 %token
   int		{ TokenInt $$ }
   float		{ TokenFloat $$ }
-  schema        { TokenName "schema" }
-  scalar        { TokenName "scalar" }
-  implements    { TokenName "implements" }
-  interface     { TokenName "interface" }
-  union         { TokenName "union" }
-  directive     { TokenName "directive" }
-  on            { TokenName "on" }
-  enum          { TokenName "enum" }
-  input         { TokenName "input" }
-  type          { TokenName "type" }
-  extend        { TokenName "extend" }
-  fragment      { TokenName "fragment" }
+  schema        { TokenReserved "schema" }
+  scalar        { TokenReserved "scalar" }
+  implements    { TokenReserved "implements" }
+  interface     { TokenReserved "interface" }
+  union         { TokenReserved "union" }
+  directive     { TokenReserved "directive" }
+  on            { TokenReserved "on" }
+  enum          { TokenReserved "enum" }
+  input         { TokenReserved "input" }
+  type          { TokenReserved "type" }
+  extend        { TokenReserved "extend" }
+  fragment      { TokenReserved "fragment" }
   name		{ TokenName $$ }
   string	{ TokenString $$ }
   bool		{ TokenBool $$ }

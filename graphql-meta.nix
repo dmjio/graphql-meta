@@ -15,7 +15,7 @@ mkDerivation {
   libraryToolDepends = [ alex happy ];
   executableHaskellDepends = [ base text ];
   testHaskellDepends = [
-    base hspec QuickCheck quickcheck-instances
+    base hspec QuickCheck quickcheck-instances text
   ];
   homepage = "https://github.com/urbint/graphql-meta";
   description = "Generic and meta programming facilities for GraphQL";

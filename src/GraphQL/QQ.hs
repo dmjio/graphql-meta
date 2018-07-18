@@ -112,19 +112,19 @@ parseGQLQuery
     goGType gtype =
       case gtype of
         TypeNamed (NamedType (Name n)) ->
-          Just [| TypeNamed $ NamedType $ Name $(litE $ stringL n) |]
+          Just [| TypeNamed $ NamedType $ Name $(litE $ stringL $ T.unpack n) |]
         TypeList (ListType anotherGType) ->
           goGType anotherGType
         TypeNonNull nonNullType ->
           case nonNullType of
             NonNullTypeNamed (NamedType (Name n)) ->
-              Just [| TypeNamed $ NamedType $ Name $(litE $ stringL n) |]
+              Just [| TypeNamed $ NamedType $ Name $(litE $ stringL $ T.unpack n) |]
             NonNullTypeList (ListType anotherGType) ->
               goGType anotherGType
 
     goVarDefs scopeTable (VariableDefinition (Variable (Name n)) gtype defVal) = do
       newGType <- goGType gtype
-      newVar <- Just [| Name $(litE $ stringL n) |]
+      newVar <- Just [| Name $(litE $ stringL $ T.unpack n) |]
       newVal <- goDefVal scopeTable defVal
       Just [| VariableDefinition (Variable $newVar) $newGType $newVal |]
 
@@ -135,20 +135,20 @@ parseGQLQuery
 
     subVars scopeTable (ValueVariable (Variable (Name k))) =
       case M.lookup k scopeTable of
-        Just True -> Just [| toExpr $(pure $ VarE (mkName k)) |]
-        _ -> Just [| toExpr ($(litE $ stringL k) :: String) |]
+        Just True -> Just [| toExpr $(pure $ VarE (mkName $ T.unpack k)) |]
+        _ -> Just [| toExpr ($(litE $ stringL $ T.unpack k) :: String) |]
 
     subVars scopeTable (ValueString k) =
       case M.lookup k scopeTable of
-        Just True -> Just [| toExpr $(pure $ VarE (mkName k)) |]
-        _ -> Just [| toExpr ($(litE $ stringL k) :: String) |]
+        Just True -> Just [| toExpr $(pure $ VarE (mkName $ T.unpack k)) |]
+        _ -> Just [| toExpr ($(litE $ stringL $ T.unpack k) :: String) |]
 
     subVars scopeTable (ValueInt i) = Just [| ValueInt i |]
     subVars scopeTable (ValueFloat f) = Just [| ValueFloat f |]
     subVars scopeTable (ValueBoolean b) = Just [| ValueBoolean b |]
     subVars scopeTable ValueNull = Just [| ValueNull |]
     subVars scopeTable (ValueEnum (EnumValue (Name n))) =
-      Just [| ValueEnum $ EnumValue $ Name $(litE $ stringL n) |]
+      Just [| ValueEnum $ EnumValue $ Name $(litE $ stringL $ T.unpack n) |]
     subVars scopeTable (ValueList vs) = do
       newVals <- traverse (subVars scopeTable) vs
       Just [| ValueList $(listE newVals) |]
@@ -158,19 +158,19 @@ parseGQLQuery
 
     goObjectField scopeTable (ObjectField (Name x) v) = do
       newVar <- subVars scopeTable v
-      Just [| ObjectField (Name $(litE $ stringL x)) $newVar |]
+      Just [| ObjectField (Name $(litE $ stringL $ T.unpack x)) $newVar |]
 
     subArgs scopeTable (Argument (Name n) var) = do
       newVar <- join $ subVars scopeTable <$> Just var
-      Just [| Argument (Name $(litE $ stringL n)) $newVar |]
+      Just [| Argument (Name $(litE $ stringL $ T.unpack n)) $newVar |]
 
-    subMaybeName (Just (Name n)) = [| Just $ Name ($(litE $ stringL n)) |]
+    subMaybeName (Just (Name n)) = [| Just $ Name ($(litE $ stringL $ T.unpack n)) |]
     subMaybeName Nothing = [| Nothing |]
 
-    subMaybeAlias (Just (Alias (Name n))) = [| Just $ Alias $ Name ($(litE $ stringL n)) |]
+    subMaybeAlias (Just (Alias (Name n))) = [| Just $ Alias $ Name ($(litE $ stringL $ T.unpack n)) |]
     subMaybeAlias Nothing = [| Nothing |]
 
-    subName (Name n) = [| Name $(litE $ stringL n) |]
+    subName (Name n) = [| Name $(litE $ stringL $ T.unpack n) |]
 
     subDirs scopeTable (Directive name args) = do
       let newName = subName name
@@ -184,7 +184,7 @@ parseGQLQuery
           newArgs <- traverse (subArgs scopeTable) args
           newDirs <- traverse (subDirs scopeTable) dirs
           let newAlias = subMaybeAlias maybeAlias
-          Just [| toField $(pure $ VarE (mkName n))
+          Just [| toField $(pure $ VarE (mkName $ T.unpack n))
                    $newAlias
                    $(listE newArgs)
                    $(listE newDirs)
@@ -195,7 +195,7 @@ parseGQLQuery
           newArgs <- traverse (subArgs scopeTable) args
           newDirs <- traverse (subDirs scopeTable) dirs
           let newAlias = subMaybeAlias maybeAlias
-          Just [| toField ($(litE $ stringL n) :: String)
+          Just [| toField ($(litE $ stringL $ T.unpack n) :: String)
                    $newAlias
                    $(listE newArgs)
                    $(listE newDirs)
@@ -205,7 +205,7 @@ parseGQLQuery
       newDirs <- traverse (subDirs scopeTable) dirs
       Just [| SelectionFragmentSpread
                 (FragmentSpread
-                   (Name $(litE $ stringL x))
+                   (Name $(litE $ stringL $ T.unpack x))
                    $(listE newDirs)) |]
     subFields scopeTable fieldsTable (SelectionInlineFragment (InlineFragment maybeTypeCond dirs sels)) = do
       newDirs <- traverse (subDirs scopeTable) dirs
@@ -213,7 +213,7 @@ parseGQLQuery
       let newTypeCond = case maybeTypeCond of
             Nothing -> [| Nothing |]
             Just (TypeCondition (NamedType (Name c))) ->
-              [| Just $ NamedType $ Name $(litE $ stringL c) |]
+              [| Just $ NamedType $ Name $(litE $ stringL $ T.unpack c) |]
       Just [| SelectionInlineFragment
                 (InlineFragment
                    $newTypeCond
@@ -222,10 +222,10 @@ parseGQLQuery
                 )
             |]
 
-makeTable :: S.Set String -> Q (Map String Bool)
+makeTable :: S.Set Text -> Q (Map Text Bool)
 makeTable xs = M.unions <$> do
   flip traverse (S.toList xs) $ \x -> do
-    result <- lookupValueName x
+    result <- lookupValueName (T.unpack x)
     let inScope = isJust result
     pure $ if inScope
            then M.singleton x True
@@ -245,13 +245,11 @@ class ToField a where
 
 instance ToField Text where
   toField s maybeAlias args dirs sels =
-    SelectionField $ Field maybeAlias (newName s) args dirs sels
-      where
-        newName = Name . T.unpack
+    SelectionField $ Field maybeAlias (Name s) args dirs sels
 
 instance ToField String where
   toField s maybeAlias args dirs sels =
-    SelectionField $ Field maybeAlias (Name s) args dirs sels
+    SelectionField $ Field maybeAlias (Name $ T.pack s) args dirs sels
 
 -- | Used to convert Haskell metavariables into GraphQL Values
 class ToExpr a where
@@ -270,7 +268,7 @@ instance ToExpr Double where
   toExpr = ValueFloat
 
 instance ToExpr Text where
-  toExpr = ValueString . T.unpack
+  toExpr = ValueString
 
 instance ToExpr a => ToExpr [a] where
   toExpr = ValueList . map toExpr
@@ -279,7 +277,7 @@ instance ToExpr a => ToExpr (Map String a) where
   toExpr x =
     ValueObject $ do
       (k,v) <- M.toList x
-      let name = Name k
+      let name = Name (T.pack k)
       pure $ ObjectField name (toExpr v)
 
 instance ToExpr a => ToExpr (Maybe a) where
@@ -291,11 +289,11 @@ instance (ToExpr b, ToExpr a) => ToExpr (Either a b) where
   toExpr (Right x) = toExpr x
 
 instance {-# overlaps #-} ToExpr String where
-  toExpr = ValueString
+  toExpr = ValueString . T.pack
 
 getVariables
   :: ExecutableDefinition
-  -> Set String
+  -> Set Text
 getVariables = goDef
   where
     goDef (DefinitionOperation opDef) = goOpDef opDef
@@ -320,7 +318,7 @@ getVariables = goDef
 
 getFields
   :: ExecutableDefinition
-  -> Set String
+  -> Set Text
 getFields = go
   where
     go (DefinitionOperation (AnonymousQuery sels))

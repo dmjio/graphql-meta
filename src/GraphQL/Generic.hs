@@ -31,8 +31,8 @@ module GraphQL.Generic
 import           GHC.Generics
 import           GHC.TypeLits
 import           Data.Proxy
-import           Data.Text                       (Text, pack)
-import qualified Data.Text.IO                    as T
+import           Data.Text    (Text, pack)
+import qualified Data.Text.IO as T
 import           Data.Monoid
 --------------------------------------------------------------------------------
 import           GraphQL.AST
@@ -69,7 +69,7 @@ emptyObjectTypeDef =
     (FieldsDefinition [])
 
 addName
-  :: String
+  :: Text
   -> ObjectTypeDefinition
   -> ObjectTypeDefinition
 addName name (ObjectTypeDefinition d _ ii ds fs)
@@ -100,14 +100,14 @@ instance (KnownSymbol name, GToObjectTypeDefinition a) =>
     gToObjectTypeDefinition Proxy obj =
       gToObjectTypeDefinition (Proxy @a) (addName name obj)
         where
-          name = symbolVal (Proxy @name)
+          name = pack $ symbolVal (Proxy @name)
 
 instance (ToGQLType gType, KnownSymbol name) =>
   GToObjectTypeDefinition (S1 (MetaSel (Just name) u s d) (K1 i gType)) where
     gToObjectTypeDefinition Proxy = addField field
         where
           field = FieldDefinition Nothing fName (ArgumentsDefinition []) gtype []
-          fName = Name $ symbolVal (Proxy @ name)
+          fName = Name $ pack $ symbolVal (Proxy @ name)
           gtype = toGQLType (Proxy @ gType)
 
 instance GToObjectTypeDefinition U1 where

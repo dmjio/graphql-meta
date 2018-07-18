@@ -19,6 +19,7 @@ module GraphQL.AST where
 import GHC.Generics  (Generic)
 import Data.Typeable (Typeable)
 import Data.Data     (Data)
+import Data.Text     (Text)
 --------------------------------------------------------------------------------
 import GraphQL.Lexer
 --------------------------------------------------------------------------------
@@ -131,7 +132,7 @@ data Value
   = ValueVariable Variable
   | ValueInt Int
   | ValueFloat Double
-  | ValueString String
+  | ValueString Text
   | ValueBoolean Bool
   | ValueNull
   | ValueEnum EnumValue
@@ -251,7 +252,7 @@ data OperationTypeDefinition
 
 -- | A GraphQL 'Description'
 -- http://facebook.github.io/graphql/draft/#Description
-newtype Description = Description String
+newtype Description = Description Text
   deriving (Show, Eq, Generic, Data, Typeable, Monoid)
 
 -- | A GraphQL 'TypeDefinition'
@@ -461,5 +462,5 @@ data DirectiveLocation
 
 -- | A GraphQL 'Name'
 -- http://facebook.github.io/graphql/draft/#Name
-newtype Name = Name String
+newtype Name = Name Text
   deriving (Show, Eq, Generic, Data, Typeable, Monoid)

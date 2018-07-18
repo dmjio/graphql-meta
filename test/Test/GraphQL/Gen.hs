@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module      : Test.GraphQL.Gen
@@ -8,18 +9,21 @@
 --------------------------------------------------------------------------------
 module Test.GraphQL.Gen where
 --------------------------------------------------------------------------------
-import Control.Monad
-import Data.Char
-import Test.QuickCheck
+import           Control.Monad
+import           Data.Monoid
+import           Data.Char
+import           Test.QuickCheck
+import qualified Data.Text       as T
+import           Data.Text       (Text)
 --------------------------------------------------------------------------------
-import GraphQL.AST
-import GraphQL.Lexer
+import           GraphQL.AST
+import           GraphQL.Lexer
 --------------------------------------------------------------------------------
 -- | Generates a valid GraphQL 'Name'
 -- http://facebook.github.io/graphql/draft/#Name
 genName :: Gen Name
 genName = do
-  r <- fmap Name $ (:) <$> prefix <*> suffix
+  r <- fmap Name $ T.cons <$> prefix <*> suffix
   if r == Name "on"
     then genName
     else pure r
@@ -31,8 +35,8 @@ genName = do
           , choose ('A', 'Z')
           , pure '_'
           ]
-        suffix :: Gen String
-        suffix = do
+        suffix :: Gen Text
+        suffix = T.pack <$> do
           k <- choose (1, 5)
           replicateM k $
             oneof [
@@ -70,20 +74,20 @@ genValue =
         flip replicateM genObjectField
   ]
 
-genStringCharacters :: Gen String
-genStringCharacters = do
+genStringCharacters :: Gen Text
+genStringCharacters = T.pack <$> do
   n <- choose (0, 40)
   replicateM n $ elements $ filter (`notElem` ['\n','\r','"','\\']) chars
     where
       chars = [ '\x9', '\xa', '\xd'] ++ ['\x20' .. '\xff']
 
-genBlockStringCharacter :: Gen String
+genBlockStringCharacter :: Gen Text
 genBlockStringCharacter = do
   str <- genStringCharacters
-  pure ("\"\"\"" ++ str ++ "\"\"\"")
+  pure ("\"\"\"" <> str <> "\"\"\"")
 
-genUnicode :: Gen String
-genUnicode = do
+genUnicode :: Gen Text
+genUnicode = T.pack <$> do
   elements $ do
       a <- pure "\\u"
       b <- alpha
@@ -96,8 +100,8 @@ genUnicode = do
              ++ ['A'..'F']
              ++ ['0'..'9']
 
-genEscapedCharacter :: Gen String
-genEscapedCharacter = do
+genEscapedCharacter :: Gen T.Text
+genEscapedCharacter = T.pack <$> do
   elements $ do
     a <- pure "\\"
     b <- chars
