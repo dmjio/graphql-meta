@@ -1,7 +1,4 @@
-resolver: lts-11.10
+resolver: nightly-2018-05-30
 packages:
 - '.'
-- location:
-    git: https://github.com/urbint/graphql-api.git
-    commit: 16fdcacbb56d08bac591b0fb4252f6a13adf9ab7
-  extra-dep: true
+system-ghc: true

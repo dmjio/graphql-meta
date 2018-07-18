@@ -1,0 +1,93 @@
+pipeline:
+  commits:
+    image: urbint/commit-lint:13
+    secrets: [ cindi_ssh_private_key ]
+
+  restore-cache:
+    image: drillster/drone-volume-cache
+    restore: true
+    mount:
+      - .stack-work
+      - .stack
+      - dist
+    volumes:
+      - /var/lib/drone/cache:/cache
+    when:
+      event: [push, pull_request, tag, deployment]
+
+  deps:
+    image: gcr.io/urbint-1259/urbint-haskell-base:28
+    environment:
+      - STACK_ROOT=/drone/src/github.com/urbint/graphql-meta/.stack
+    commands:
+      - mkdir -p .stack
+      # - stack upgrade
+      - stack build --test --only-dependencies
+    secrets: [ docker_username, docker_password ]
+
+  build:
+    image: gcr.io/urbint-1259/urbint-haskell-base:28
+    environment:
+      - STACK_ROOT=/drone/src/github.com/urbint/graphql-meta/.stack
+    commands:
+      - stack build --pedantic --ghc-options -Wno-missing-home-modules
+    secrets: [ docker_username, docker_password ]
+
+  test:
+    group: tests
+    image: gcr.io/urbint-1259/urbint-haskell-base:28
+    environment:
+      - STACK_ROOT=/drone/src/github.com/urbint/graphql-meta/.stack
+    commands:
+      - stack test --pedantic --ghc-options -Wno-missing-home-modules
+    secrets: [ docker_username, docker_password ]
+
+  hlint:
+    group: tests
+    image: gcr.io/urbint-1259/urbint-haskell-base:28
+    environment:
+      - STACK_ROOT=/drone/src/github.com/urbint/graphql-meta/.stack
+    commands:
+      - stack install hlint
+      - stack exec -- hlint src test app
+    secrets: [ docker_username, docker_password ]
+
+  bench:
+    image: gcr.io/urbint-1259/urbint-haskell-base:28
+    environment:
+      - STACK_ROOT=/drone/src/github.com/urbint/graphql-meta/.stack
+    commands:
+      - stack bench --no-run-benchmarks --pedantic --ghc-options -Wno-missing-home-modules
+    secrets: [ docker_username, docker_password ]
+
+  docs:
+    image: gcr.io/urbint-1259/urbint-haskell-base:28
+    commands:
+      - stack haddock
+      - mkdir -p doc.build
+      - cp -r "$(stack path --local-doc-root)"/* doc.build
+    when:
+      status: [ success ]
+      branch: master
+    secrets: [ docker_username, docker_password ]
+
+  build-cache:
+    group: post-build
+    image: drillster/drone-volume-cache
+    rebuild: true
+    mount:
+      - ./.stack-work
+      - ./.stack
+      - dist
+    volumes:
+      - /var/lib/drone/cache:/cache
+    when:
+      branch: master
+      status: [ success ]
+
+  slack:
+    group: post-build
+    image: plugins/slack
+    secrets: [ slack_webhook ]
+    when:
+      status: [ success, failure ]
