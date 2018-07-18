@@ -1,7 +1,20 @@
 graphql-meta
 ================
 
-Correct-by-construction [GraphQL](https://graphql.org/) queries and schema at compile time.
+A [GraphQL](https://graphql.org/) toolkit providing the following:
+  - Alex [Lexer](http://facebook.github.io/graphql/draft/#sec-Appendix-Grammar-Summary.Lexical-Tokens) of the `GraphQL` lexical specification.
+    - [Source](https://github.com/urbint/graphql-meta/blob/master/src/GraphQL/Lexer.x)
+  - Happy [Parser](http://facebook.github.io/graphql/draft/#sec-Appendix-Grammar-Summary.Document) of the `GraphQL` BNF Grammar.
+    - [Source](https://github.com/urbint/graphql-meta/blob/master/src/GraphQL/Lexer.x)
+  - [Pretty printer](http://hackage.haskell.org/package/prettyprinter) of the `GraphQL` abstract syntax tree (AST) for human consumption.
+    - [Source](https://github.com/urbint/graphql-meta/blob/master/src/GraphQL/Pretty.hs)
+  - [QuickCheck](http://www.cse.chalmers.se/~rjmh/QuickCheck/manual.html) generators for creating random AST fragments
+    - Used in conjunction with pretty printing to establish round trip property tests.
+	- [Source](https://github.com/urbint/graphql-meta/blob/master/test/Test/GraphQL/Gen.hs)
+  - Generics implementation providing correct-by-construction `Schema` at compile time.
+    - [Source](https://github.com/urbint/graphql-meta/blob/master/src/GraphQL/Generic.hs)
+  - QuasiQuoter providing inline definitions of `ExecutableDefinitions`.
+    - [Source](https://github.com/urbint/graphql-meta/blob/master/src/GraphQL/QQ.hs)
 
 ## Table of Contents
 - [Query](#query)
@@ -27,9 +40,8 @@ main = print [query| { building (id: 123) {floorCount, id}} |]
 ```
 
 #### Result
-```haskell
-> main
 
+```haskell
 QueryDocument {getDefinitions = [
   DefinitionOperation (AnonymousQuery [
 	SelectionField (Field Nothing (Name {unName = "building"}) [
@@ -43,12 +55,12 @@ QueryDocument {getDefinitions = [
 
 ### Substitution
 
-[GraphQL](https://graphql.org/) `QueryDocument` abstract syntax tree rewriting is made possible via template haskell's metavariable substitution. During `QuasiQuotation` all unbound variables in a `GraphQL` query that have identical names inside the current scope will automatically be translated into `GraphQL` AST terms and substituted.
+[GraphQL](https://graphql.org/) `ExecutableDefinition` abstract syntax tree rewriting is made possible via Template Haskell's metavariable substitution. During `QuasiQuotation` all unbound variables in a `GraphQL` query that have identical names inside the current scope will automatically be translated into `GraphQL` AST terms and substituted.
 
 ```haskell
 buildingQuery
   :: Int
-  -> QueryDocument
+  -> ExecutableDefinition
 buildingQuery buildingId =
   [query| { building (id: $buildingId) {floorCount, id}} |]
 ```
@@ -56,8 +68,6 @@ buildingQuery buildingId =
 #### Result
 
 ```haskell
-> main = print (buildingQuery 4)
-
 QueryDocument {getDefinitions = [
   DefinitionOperation (AnonymousQuery [
 	SelectionField (Field Nothing (Name {unName = "building"}) [
@@ -69,30 +79,8 @@ QueryDocument {getDefinitions = [
   ]}
 ```
 
-## Schema
+### Generics
 
-```haskell
-{-# LANGUAGE QuasiQuotes #-}
-
-module Main (main) where
-
-import GraphQL.QQ (schema)
-
-main :: IO ()
-main = print [schema| type Person { name : String } |]
-```
-
-#### Result
-
-```haskell
-SchemaDocument [
-  TypeDefinitionObject (ObjectTypeDefinition (Name {unName = "Person"}) [] [
-	FieldDefinition (Name {unName = "name"}) [] (TypeNamed (NamedType (Name {unName = "String"})))
-  ])
-]
-```
-
-## Generics
 It is possible to derive GraphQL schema using `GHC.Generics`.
 Simply import `GHC.Generics`, derive `Generic` (must enable the `DeriveGeneric` language extension) and make an instance of `ToObjectTypeDefintion`.
 See below for an example:
@@ -106,7 +94,6 @@ import           GHC.Generics                    (Generic)
 import           GraphQL.Internal.Syntax.Encoder (schemaDocument)
 import           Data.Proxy                      (Proxy)
 import qualified Data.Text.IO                    as T
-
 import           GraphQL.Generic                 (ToObjectTypeDefinition(..))
 
 data Person = Person
@@ -117,14 +104,8 @@ data Person = Person
 instance ToObjectTypeDefinition Person
 
 showPersonSchema :: IO ()
-showPersonSchema
-  = T.putStrLn
-  $ schemaDocument
-  $ SchemaDocument [ TypeDefinitionObject obj ]
-    where
-      obj = toObjectTypeDefinition (Proxy @ Person)
+showPersonSchema = print $ toObjectTypeDefinition (Proxy @ Person)
 
-main :: IO () = showPersonSchema
 -- type Person{name:String!,age:Int!}
 ```
 
@@ -144,8 +125,8 @@ main :: IO () = showPersonSchema
 
 ## Credit
 
-Inspired by [@edsko](https://github.com/edsko)'s work [Quasi-quoting DLS for free](http://www.well-typed.com/blog/2014/10/quasi-quoting-dsls/).
-
+- Inspired by [@edsko](https://github.com/edsko)'s work [Quasi-quoting DLS for free](http://www.well-typed.com/blog/2014/10/quasi-quoting-dsls/).
+- `Alex` and `Happy` lexing & parsing inspired by [config-value](https://github.com/glguy/config-value)
 
 ## License
 
