@@ -23,6 +23,7 @@ import           Text.Read
 import           Data.Data
 import           GHC.Generics
 import           Data.Text (Text, pack)
+import           Control.DeepSeq
 --------------------------------------------------------------------------------
 }
 
@@ -184,6 +185,8 @@ data OperationType
   | Mutation
   deriving (Show, Eq, Data, Read, Generic, Typeable, Enum)
 
+instance NFData OperationType
+
 -- | http://facebook.github.io/graphql/draft/#ExecutableDirectiveLocation
 data ExecutableDirectiveLocation
   = QUERY
@@ -194,6 +197,8 @@ data ExecutableDirectiveLocation
   | FRAGMENT_SPREAD
   | INLINE_FRAGMENT
   deriving (Show, Eq, Read, Data, Generic, Typeable, Enum)
+
+instance NFData ExecutableDirectiveLocation
 
 -- | http://facebook.github.io/graphql/draft/#TypeSystemDirectiveLocation
 data TypeSystemDirectiveLocation
@@ -209,6 +214,8 @@ data TypeSystemDirectiveLocation
   | INPUT_OBJECT
   | INPUT_FIELD_DEFINITION
   deriving (Show, Eq, Read, Data, Generic, Typeable, Enum)
+
+instance NFData TypeSystemDirectiveLocation
 
 -- | Token unit for lexing the GraphQL specification
 data Token
@@ -229,6 +236,8 @@ data Token
 data Error
   = ConversionError String String
   deriving (Show, Eq, Data, Read, Generic, Typeable)
+
+instance NFData Error
 
 -- | Retrieve GraphQL tokens
 getTokens :: String -> [Token]
