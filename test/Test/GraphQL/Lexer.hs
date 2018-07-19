@@ -28,7 +28,7 @@ lexerSpec = do
   buildingSpec
 
 floatSpec :: Spec
-floatSpec = do
+floatSpec =
   describe "Should lex floating point numbers" $ do
     it "should lex a Float" $ property $ \x ->
       getTokens (show x) `shouldBe` [TokenFloat x]
@@ -46,8 +46,8 @@ intSpec =
 
 punctuatorSpec :: Spec
 punctuatorSpec =
-  describe "Should lex Punctuators" $ do
-    it "should lex all valid punctuation" $ do
+  describe "Should lex Punctuators" $
+    it "should lex all valid punctuation" $
       getTokens "!$()...:=@[]{|}&"
         `shouldBe`
         [ TokenPunctuator "!"

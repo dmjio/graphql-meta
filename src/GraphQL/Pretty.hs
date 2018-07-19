@@ -1,7 +1,5 @@
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE StandaloneDeriving  #-}
-{-# LANGUAGE TemplateHaskell     #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module      : GraphQL.Pretty
@@ -12,15 +10,10 @@
 --------------------------------------------------------------------------------
 module GraphQL.Pretty where -- ( printExecutableDefinition ) where
 --------------------------------------------------------------------------------
-import Data.List
-import Data.Maybe
 import Data.Text.Prettyprint.Doc
-import Data.Text.Prettyprint.Doc.Render.Text
-import Data.Char
 --------------------------------------------------------------------------------
 import GraphQL.AST
 import GraphQL.Lexer
-import GraphQL.Parser
 --------------------------------------------------------------------------------
 -- | Pretty prints a 'Document'
 printDocument
@@ -65,6 +58,7 @@ printTypeExtension (ExtensionEnumType enumTypeExtension)
 printTypeExtension (ExtensionInputObjectType inputObjectTypeExtension)
   = printInputObjectTypeExtension inputObjectTypeExtension
 
+printInputObjectTypeExtension :: InputObjectTypeExtension -> Doc ann
 printInputObjectTypeExtension
   (InputObjectTypeExtension (Name name) dirs (InputFieldsDefinition inputFieldsDefinition))
     = mconcat [ pretty name
@@ -79,14 +73,14 @@ printInputFieldDefinition
                          typ
                          maybeDefaultValue
                          dirs)
-  = mconcat [ fromMaybe mempty (printDescription <$> maybeDescription)
+  = mconcat [ maybe mempty printDescription maybeDescription
             , pretty name
             , printType typ
             , printDirectives dirs
             , printMaybeDefaultValue maybeDefaultValue
             ]
 
-
+printEnumTypeExtension :: EnumTypeExtension -> Doc ann
 printEnumTypeExtension (EnumTypeExtension (Name name) dirs enumValuesDefinition)
   = mconcat [ pretty name
             , printDirectives dirs
@@ -108,6 +102,7 @@ printEnumValue
   :: EnumValue -> Doc a
 printEnumValue (EnumValue (Name n)) = pretty n
 
+printUnionTypeExtension :: UnionTypeExtension -> Doc ann
 printUnionTypeExtension (UnionTypeExtension (Name name) directives unionMemberTypes)
   = mconcat [ pretty name, printDirectives directives
             , printUnionMemberTypes unionMemberTypes
@@ -168,9 +163,8 @@ printObjectTypeExtension
   , printDirectives directives
   ]
 
-
 printSchemaExtension :: SchemaExtension -> Doc a
-printSchemaExtension (SchemaExtension dirs operationTypeDefs) = do
+printSchemaExtension (SchemaExtension dirs operationTypeDefs) =
   mconcat [ printDirectives dirs
           , vsep (printOperationTypeDefinitions operationTypeDefs)
           ]
@@ -185,6 +179,7 @@ printTypeSystemDefinition (DefinitionType typeDef) =
 printTypeSystemDefinition (DefinitionDirective dirDef) =
   printDirectiveDefinition dirDef
 
+printSchemaDefinition :: SchemaDefinition -> Doc ann
 printSchemaDefinition (SchemaDefinition dirs operationTypeDefs) =
   pretty ("schema" :: String) <>
     printDirectives dirs <+> encloseSep lbrace rbrace comma ops
@@ -208,7 +203,7 @@ printDirectiveDefinition :: DirectiveDefinition -> Doc ann
 printDirectiveDefinition
   (DirectiveDefinition maybeDescription (Name name) argsDefs dirLocs)
     = hsep
-      [ fromMaybe mempty (printDescription <$> maybeDescription)
+      [ maybe mempty printDescription maybeDescription
       , pretty ("directive" :: String)
       , pretty '@'
       , pretty name
@@ -245,6 +240,7 @@ printInputValueDefinition
     , printDirectives directives
     ]
 
+printDescription :: Description -> Doc ann
 printDescription (Description s) = pretty '"' <> pretty s <> pretty '"'
 
 printTypeDefinition :: TypeDefinition -> Doc a
@@ -261,9 +257,9 @@ printTypeDefinition (DefinitionEnumType enumTypeDefinition) =
 printTypeDefinition (DefinitionInputObjectType inputObjectTypeDefinition) =
   printInputObjectTypeDefinition inputObjectTypeDefinition
 
+printObjectTypeDefinition :: ObjectTypeDefinition -> Doc ann
 printObjectTypeDefinition
-  (ObjectTypeDefinition maybeDescription (Name name)
-     implementsInterfaces dirs namedTypes)
+  (ObjectTypeDefinition maybeDescription (Name name) _ dirs _)
   = hsep [
       maybe mempty printDescription maybeDescription
     , pretty name
@@ -287,7 +283,7 @@ printUnionTypeDefinition
   (UnionTypeDefinition maybeDescription
                         (Name name)
                         directives
-                        unionMemberTypes)
+                        _)
   = mconcat [
       maybe mempty printDescription maybeDescription
     , pretty name
@@ -299,7 +295,7 @@ printEnumTypeDefinition
   (EnumTypeDefinition maybeDescription
                        (Name name)
                        directives
-                       enumValuesDefinition)
+                       _)
   = mconcat [
       maybe mempty printDescription maybeDescription
     , pretty name
@@ -311,13 +307,14 @@ printInputObjectTypeDefinition
   (InputObjectTypeDefinition maybeDescription
                        (Name name)
                        directives
-                       inputFieldsDefinition)
+                       _)
   = mconcat [
       maybe mempty printDescription maybeDescription
     , pretty name
     , printDirectives directives
     ]
 
+printScalarTypeDefinition :: ScalarTypeDefinition -> Doc ann
 printScalarTypeDefinition
   (ScalarTypeDefinition maybeDescription (Name name) directives)
     = mconcat [
@@ -376,11 +373,8 @@ printVariableDefinition (VariableDefinition variable typ' maybeDefaultValue)
   <+> printMaybeDefaultValue maybeDefaultValue
 
 printMaybeDefaultValue :: Maybe DefaultValue -> Doc ann
-printMaybeDefaultValue maybeDefaultValue =
-  fromMaybe mempty (go <$> maybeDefaultValue)
-    where
-      go (DefaultValue val) =
-        pretty '=' <+> printValue val
+printMaybeDefaultValue (Just (DefaultValue val))  = pretty '=' <+> printValue val
+printMaybeDefaultValue Nothing = mempty
 
 printType :: Type -> Doc ann
 printType (TypeNamed (NamedType (Name n))) =
@@ -467,13 +461,15 @@ printArgs args
   | otherwise =
       encloseSep lparen rparen comma (map printArg args)
 
+printArg :: Argument -> Doc ann
 printArg (Argument (Name name) value) =
   pretty name <> colon <> printValue value
 
+printValue :: Value -> Doc ann
 printValue (ValueString s)      = pretty '"' <> pretty s <> pretty '"'
 printValue (ValueBoolean True)  = pretty ("true" :: String)
 printValue (ValueBoolean False) = pretty ("false" :: String)
-printValue (ValueNull)          = pretty ("null" :: String)
+printValue ValueNull            = pretty ("null" :: String)
 printValue (ValueInt int)       = pretty int
 printValue (ValueEnum ev)       = printEnum ev
 printValue (ValueFloat float)   = pretty float
@@ -483,10 +479,14 @@ printValue (ValueList values)   =
 printValue (ValueObject values) =
   encloseSep lbrace rbrace comma (map printObjectField values)
 
+printObjectField :: ObjectField -> Doc ann
 printObjectField (ObjectField (Name name) val)
   = pretty name <> colon <> printValue val
 
+printVariable :: Variable -> Doc ann
 printVariable (Variable (Name n))    = pretty '$' <> pretty n
+
+printEnum :: EnumValue -> Doc ann
 printEnum (EnumValue (Name n))  = pretty n
 
 printDirectives :: Directives -> Doc ann
@@ -514,4 +514,3 @@ printTypeCondition (TypeCondition (NamedType (Name n)))
 -- shok = print $ printExecutableDefinition k
 -- pok  = exeDef $ show $ printExecutableDefinition k
 -- rok = Right k == pok
-

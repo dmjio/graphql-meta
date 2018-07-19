@@ -1,11 +1,9 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE DeriveDataTypeable         #-}
-{-# LANGUAGE StandaloneDeriving         #-}
-{-# LANGUAGE TemplateHaskell            #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module      : GraphQL.AST
@@ -20,6 +18,10 @@ import GHC.Generics  (Generic)
 import Data.Typeable (Typeable)
 import Data.Data     (Data)
 import Data.Text     (Text)
+#if MIN_VERSION_base(4,10,0)
+import Data.Semigroup (Semigroup)
+#else
+#endif
 --------------------------------------------------------------------------------
 import GraphQL.Lexer
 --------------------------------------------------------------------------------
@@ -119,12 +121,12 @@ data FragmentDefinition
 -- | A GraphQL 'FragmentName'
 -- http://facebook.github.io/graphql/draft/#FragmentName
 newtype FragmentName = FragmentName Name
-  deriving (Show, Eq, Generic, Data, Typeable, Monoid)
+  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup)
 
 -- | A GraphQL 'TypeCondition'
 -- http://facebook.github.io/graphql/draft/#TypeCondition
 newtype TypeCondition = TypeCondition NamedType
-  deriving (Show, Eq, Generic, Data, Typeable, Monoid)
+  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup)
 
 -- | A GraphQL 'Value'
 -- http://facebook.github.io/graphql/draft/#Value
@@ -143,7 +145,7 @@ data Value
 -- | A GraphQL 'EnumValue'
 -- http://facebook.github.io/graphql/draft/#EnumValue
 newtype EnumValue = EnumValue Name
-  deriving (Show, Eq, Generic, Data, Typeable, Monoid)
+  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup)
 
 -- | A GraphQL 'ObjectField'
 -- http://facebook.github.io/graphql/draft/#ObjectField
@@ -163,7 +165,7 @@ data VariableDefinition
 -- | A GraphQL 'Variable'
 -- http://facebook.github.io/graphql/draft/#Variable
 newtype Variable = Variable Name
-  deriving (Show, Eq, Generic, Data, Typeable, Monoid)
+  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup)
 
 -- | A GraphQL 'DefaultValue'
 -- http://facebook.github.io/graphql/draft/#DefaultValue
@@ -181,7 +183,7 @@ data Type
 -- | A GraphQL 'NamedType'
 -- http://facebook.github.io/graphql/draft/#NamedType
 newtype NamedType = NamedType Name
-  deriving (Show, Eq, Generic, Data, Typeable, Monoid)
+  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup)
 
 -- | A GraphQL 'ListType'
 -- http://facebook.github.io/graphql/draft/#ListType
@@ -253,7 +255,7 @@ data OperationTypeDefinition
 -- | A GraphQL 'Description'
 -- http://facebook.github.io/graphql/draft/#Description
 newtype Description = Description Text
-  deriving (Show, Eq, Generic, Data, Typeable, Monoid)
+  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup)
 
 -- | A GraphQL 'TypeDefinition'
 -- http://facebook.github.io/graphql/draft/#TypeDefinition
@@ -379,7 +381,7 @@ data UnionTypeDefinition
 -- | http://facebook.github.io/graphql/draft/#UnionMemberTypes
 newtype UnionMemberTypes
   = UnionMemberTypes [NamedType]
-  deriving (Show, Eq, Generic, Data, Typeable, Monoid)
+  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup)
 
 -- | http://facebook.github.io/graphql/draft/#UnionTypeExtension
 data UnionTypeExtension
@@ -463,4 +465,4 @@ data DirectiveLocation
 -- | A GraphQL 'Name'
 -- http://facebook.github.io/graphql/draft/#Name
 newtype Name = Name Text
-  deriving (Show, Eq, Generic, Data, Typeable, Monoid)
+  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup)

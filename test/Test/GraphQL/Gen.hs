@@ -10,7 +10,6 @@
 module Test.GraphQL.Gen where
 --------------------------------------------------------------------------------
 import           Control.Monad
-import           Data.Monoid
 import           Data.Char
 import           Test.QuickCheck
 import qualified Data.Text       as T
@@ -89,12 +88,11 @@ genBlockStringCharacter = do
 genUnicode :: Gen Text
 genUnicode = T.pack <$> do
   elements $ do
-      a <- pure "\\u"
       b <- alpha
       c <- alpha
       d <- alpha
       e <- alpha
-      pure $ a ++ [b,c,d,e]
+      pure $ "\\u" ++ [b,c,d,e]
       where
         alpha = ['a'..'f']
              ++ ['A'..'F']
@@ -103,9 +101,8 @@ genUnicode = T.pack <$> do
 genEscapedCharacter :: Gen T.Text
 genEscapedCharacter = T.pack <$> do
   elements $ do
-    a <- pure "\\"
     b <- chars
-    pure $ a ++ [b]
+    pure $ "\\" ++ [b]
       where
         chars :: String
         chars = ['\"','\\','/','b','f','n','r','t']

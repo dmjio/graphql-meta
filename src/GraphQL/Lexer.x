@@ -19,13 +19,9 @@ module GraphQL.Lexer
   , TypeSystemDirectiveLocation (..)
   ) where
 --------------------------------------------------------------------------------
-import           Data.Char     (chr)
-import           Control.Monad
-import           Data.Bool
 import           Text.Read
 import           Data.Data
 import           GHC.Generics
-import           Data.Typeable
 import           Data.Text (Text, pack)
 --------------------------------------------------------------------------------
 }
@@ -151,14 +147,14 @@ tokens :-
   @punctuator { TokenPunctuator }
   @nullToken { \s -> case s of
     "null" -> TokenNull
-    otherwise ->
+    _ ->
       TokenError (ConversionError "Not a null value" s)
   }
   @boolToken { \s ->
     case s of
       "true" -> TokenBool True
       "false" -> TokenBool False
-      otherwise ->
+      _ ->
         TokenError (ConversionError "Invalid boolean value" s)
   }
   @operationToken { \s ->
@@ -166,7 +162,7 @@ tokens :-
       "query" -> TokenOperator Query
       "mutation" -> TokenOperator Mutation
       "subscription" -> TokenOperator Subscription
-      otherwise ->
+      _ ->
         TokenError (ConversionError "Invalid operator (query, mutation, subscription)" s)
   }
   @executableDirectiveLocationToken { \s ->
