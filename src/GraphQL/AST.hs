@@ -14,12 +14,13 @@
 --------------------------------------------------------------------------------
 module GraphQL.AST where
 --------------------------------------------------------------------------------
-import GHC.Generics  (Generic)
-import Data.Typeable (Typeable)
-import Data.Data     (Data)
-import Data.Text     (Text)
+import GHC.Generics    (Generic)
+import Data.Typeable   (Typeable)
+import Data.Data       (Data)
+import Data.Text       (Text)
+import Control.DeepSeq (NFData)
 #if MIN_VERSION_base(4,10,0)
-import Data.Semigroup (Semigroup)
+import Data.Semigroup  (Semigroup)
 #else
 #endif
 --------------------------------------------------------------------------------
@@ -30,7 +31,7 @@ import GraphQL.Lexer
 -- http://facebook.github.io/graphql/draft/#sec-Language.Document
 newtype Document
   = Document [ Definition ]
-  deriving (Show, Eq, Generic, Data, Typeable)
+  deriving (Show, Eq, Generic, Data, Typeable, NFData)
 
 -- | A GraphQL 'Definition'
 -- http://facebook.github.io/graphql/draft/#Definition
@@ -40,12 +41,16 @@ data Definition
   | ExtensionTypeSystem TypeSystemExtension
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData Definition
+
 -- | A GraphQL 'ExecutableDefinition'
 -- http://facebook.github.io/graphql/draft/#ExecutableDefinitxion
 data ExecutableDefinition
   = DefinitionOperation OperationDefinition
   | DefinitionFragment FragmentDefinition
   deriving (Show, Eq, Generic, Data, Typeable)
+
+instance NFData ExecutableDefinition
 
 -- | A GraphQL 'OperationDefinition'
 -- http://facebook.github.io/graphql/draft/#ExecutableDefinition
@@ -59,6 +64,8 @@ data OperationDefinition
       SelectionSet
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData OperationDefinition
+
 -- | A GraphQL 'SelectionSet'
 -- http://facebook.github.io/graphql/draft/#sec-Selection-Sets
 type SelectionSet = [Selection]
@@ -71,16 +78,20 @@ data Selection
   | SelectionInlineFragment InlineFragment
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData Selection
+
 -- | A GraphQL 'Field' type
 -- http://facebook.github.io/graphql/draft/#sec-Field
 data Field
   = Field (Maybe Alias) Name Arguments Directives SelectionSet
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData Field
+
 -- | A GraphQL 'Alias'
 -- http://facebook.github.io/graphql/draft/#Alias
 newtype Alias = Alias Name
-  deriving (Show, Eq, Generic, Data, Typeable)
+  deriving (Show, Eq, Generic, Data, Typeable, NFData)
 
 -- | GraphQL 'Arguments'
 -- http://facebook.github.io/graphql/draft/#Arguments
@@ -91,6 +102,8 @@ type Arguments = [Argument]
 data Argument = Argument Name Value
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData Argument
+
 -- | GraphQL 'FragmentSpread' type
 -- http://facebook.github.io/graphql/draft/#sec-FragmentSpread
 data FragmentSpread
@@ -98,6 +111,8 @@ data FragmentSpread
     Name
     Directives
   deriving (Show, Eq, Generic, Data, Typeable)
+
+instance NFData FragmentSpread
 
 -- | GraphQL 'InlineFragment' type
 -- http://facebook.github.io/graphql/draft/#sec-InlineFragment
@@ -107,6 +122,8 @@ data InlineFragment
     Directives
     SelectionSet
   deriving (Show, Eq, Generic, Data, Typeable)
+
+instance NFData InlineFragment
 
 -- | A GraphQL 'FragmentDefinition'
 -- http://facebook.github.io/graphql/draft/#FragmentDefinition
@@ -118,15 +135,17 @@ data FragmentDefinition
     SelectionSet
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData FragmentDefinition
+
 -- | A GraphQL 'FragmentName'
 -- http://facebook.github.io/graphql/draft/#FragmentName
 newtype FragmentName = FragmentName Name
-  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup)
+  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup, NFData)
 
 -- | A GraphQL 'TypeCondition'
 -- http://facebook.github.io/graphql/draft/#TypeCondition
 newtype TypeCondition = TypeCondition NamedType
-  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup)
+  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup, NFData)
 
 -- | A GraphQL 'Value'
 -- http://facebook.github.io/graphql/draft/#Value
@@ -142,15 +161,19 @@ data Value
   | ValueObject [ObjectField]
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData Value
+
 -- | A GraphQL 'EnumValue'
 -- http://facebook.github.io/graphql/draft/#EnumValue
 newtype EnumValue = EnumValue Name
-  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup)
+  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup, NFData)
 
 -- | A GraphQL 'ObjectField'
 -- http://facebook.github.io/graphql/draft/#ObjectField
 data ObjectField = ObjectField Name Value
   deriving (Show, Eq, Generic, Data, Typeable)
+
+instance NFData ObjectField
 
 -- | GraphQL 'VariableDefinitions'
 -- http://facebook.github.io/graphql/draft/#VariableDefinitions
@@ -162,15 +185,17 @@ data VariableDefinition
   = VariableDefinition Variable Type (Maybe DefaultValue)
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData VariableDefinition
+
 -- | A GraphQL 'Variable'
 -- http://facebook.github.io/graphql/draft/#Variable
 newtype Variable = Variable Name
-  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup)
+  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup, NFData)
 
 -- | A GraphQL 'DefaultValue'
 -- http://facebook.github.io/graphql/draft/#DefaultValue
 newtype DefaultValue = DefaultValue Value
-  deriving (Show, Eq, Generic, Data, Typeable)
+  deriving (Show, Eq, Generic, Data, Typeable, NFData)
 
 -- | A GraphQL 'Type'
 -- http://facebook.github.io/graphql/draft/#Type
@@ -180,15 +205,17 @@ data Type
   | TypeNonNull NonNullType
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData Type
+
 -- | A GraphQL 'NamedType'
 -- http://facebook.github.io/graphql/draft/#NamedType
 newtype NamedType = NamedType Name
-  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup)
+  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup, NFData)
 
 -- | A GraphQL 'ListType'
 -- http://facebook.github.io/graphql/draft/#ListType
 newtype ListType = ListType Type
-  deriving (Show, Eq, Generic, Data, Typeable)
+  deriving (Show, Eq, Generic, Data, Typeable, NFData)
 
 -- | A GraphQL 'NonNullType'
 -- http://facebook.github.io/graphql/draft/#NonNullType
@@ -196,6 +223,8 @@ data NonNullType
   = NonNullTypeNamed NamedType
   | NonNullTypeList ListType
   deriving (Show, Eq, Generic, Data, Typeable)
+
+instance NFData NonNullType
 
 -- | The GraphQL 'Directives' type
 -- http://facebook.github.io/graphql/draft/#sec-Directives
@@ -207,6 +236,8 @@ data Directive
   = Directive Name Arguments
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData Directive
+
 -- | A GraphQL 'TypeSystemDefinition'
 -- http://facebook.github.io/graphql/draft/#TypeSystemDefinition
 data TypeSystemDefinition
@@ -215,12 +246,16 @@ data TypeSystemDefinition
   | DefinitionDirective DirectiveDefinition
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData TypeSystemDefinition
+
 -- | A GraphQL 'TypeSystemExtension'
 -- http://facebook.github.io/graphql/draft/#TypeSystemExtension
 data TypeSystemExtension
   = ExtensionSchema SchemaExtension
   | ExtensionType TypeExtension
   deriving (Show, Eq, Generic, Data, Typeable)
+
+instance NFData TypeSystemExtension
 
 -- | A GraphQL 'SchemaDefinition'
 -- http://facebook.github.io/graphql/draft/#SchemaDefinition
@@ -230,11 +265,15 @@ data SchemaDefinition
     OperationTypeDefinitions
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData SchemaDefinition
+
 -- | A GraphQL 'SchemaExtension'
 -- http://facebook.github.io/graphql/draft/#SchemaExtension
 data SchemaExtension
   = SchemaExtension Directives OperationTypeDefinitions
   deriving (Show, Eq, Generic, Data, Typeable)
+
+instance NFData SchemaExtension
 
 -- | List of 'RootOperationTypeDefinition'
 type RootOperationTypeDefinitions = [RootOperationTypeDefinition]
@@ -247,15 +286,19 @@ data RootOperationTypeDefinition
   = RootOperationTypeDefinition OperationType NamedType
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData RootOperationTypeDefinition
+
 -- | http://facebook.github.io/graphql/draft/#OperationTypeDefinition
 data OperationTypeDefinition
   = OperationTypeDefinition OperationType NamedType
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData OperationTypeDefinition
+
 -- | A GraphQL 'Description'
 -- http://facebook.github.io/graphql/draft/#Description
 newtype Description = Description Text
-  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup)
+  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup, NFData)
 
 -- | A GraphQL 'TypeDefinition'
 -- http://facebook.github.io/graphql/draft/#TypeDefinition
@@ -268,6 +311,8 @@ data TypeDefinition
   | DefinitionInputObjectType InputObjectTypeDefinition
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData TypeDefinition
+
 -- | A GraphQL 'TypeExtension'
 -- http://facebook.github.io/graphql/draft/#TypeExtension
 data TypeExtension
@@ -279,6 +324,8 @@ data TypeExtension
   | ExtensionInputObjectType InputObjectTypeExtension
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData TypeExtension
+
 -- | A GraphQL 'ScalarTypeDefinition'
 -- http://facebook.github.io/graphql/draft/#ScalarTypeDefinition
 data ScalarTypeDefinition
@@ -288,11 +335,15 @@ data ScalarTypeDefinition
     Directives
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData ScalarTypeDefinition
+
 -- | A GraphQL 'ScalarTypeExtension'
 -- http://facebook.github.io/graphql/draft/#ScalarTypeExtension
 data ScalarTypeExtension
   = ScalarTypeExtension Name Directives
   deriving (Show, Eq, Generic, Data, Typeable)
+
+instance NFData ScalarTypeExtension
 
 -- | A GraphQL 'ObjectTypeDefinition'
 -- http://facebook.github.io/graphql/draft/#ObjectTypeDefinition
@@ -305,6 +356,8 @@ data ObjectTypeDefinition
     FieldsDefinition
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData ObjectTypeDefinition
+
 -- | A GraphQL 'ObjectTypeExtension'
 -- http://facebook.github.io/graphql/draft/#ObjectTypeExtension
 data ObjectTypeExtension
@@ -315,16 +368,18 @@ data ObjectTypeExtension
     FieldsDefinition
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData ObjectTypeExtension
+
 -- | A GraphQL 'ImplementsInterfaces'
 -- http://facebook.github.io/graphql/draft/#ImplementsInterfaces
 newtype ImplementsInterfaces
   = ImplementsInterfaces [NamedType]
-  deriving (Show, Eq, Generic, Data, Typeable)
+  deriving (Show, Eq, Generic, Data, Typeable, NFData)
 
 -- | A GraphQL 'FieldsDefinition'
 -- http://facebook.github.io/graphql/draft/#FieldsDefinition
 newtype FieldsDefinition = FieldsDefinition [FieldDefinition]
-  deriving (Show, Eq, Generic, Data, Typeable)
+  deriving (Show, Eq, Generic, Data, Typeable, NFData)
 
 -- | A GraphQL 'FieldDefinition'
 -- http://facebook.github.io/graphql/draft/#FieldDefinition
@@ -337,10 +392,12 @@ data FieldDefinition
     Directives
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData FieldDefinition
+
 -- | http://facebook.github.io/graphql/draft/#ArgumentsDefinition
 newtype ArgumentsDefinition
   = ArgumentsDefinition [InputValueDefinition]
-  deriving (Show, Eq, Generic, Data, Typeable)
+  deriving (Show, Eq, Generic, Data, Typeable, NFData)
 
 -- | http://facebook.github.io/graphql/draft/#InputValueDefinition
 data InputValueDefinition
@@ -352,6 +409,8 @@ data InputValueDefinition
     Directives
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData InputValueDefinition
+
 -- | http://facebook.github.io/graphql/draft/#InterfaceTypeDefinition
 data InterfaceTypeDefinition
   = InterfaceTypeDefinition
@@ -361,6 +420,8 @@ data InterfaceTypeDefinition
     FieldsDefinition
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData InterfaceTypeDefinition
+
 -- | http://facebook.github.io/graphql/draft/#InterfaceTypeExtension
 data InterfaceTypeExtension
   = InterfaceTypeExtension
@@ -368,6 +429,8 @@ data InterfaceTypeExtension
     Directives
     FieldsDefinition
   deriving (Show, Eq, Generic, Data, Typeable)
+
+instance NFData InterfaceTypeExtension
 
 -- | http://facebook.github.io/graphql/draft/#UnionTypeDefinition
 data UnionTypeDefinition
@@ -378,10 +441,12 @@ data UnionTypeDefinition
     UnionMemberTypes
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData UnionTypeDefinition
+
 -- | http://facebook.github.io/graphql/draft/#UnionMemberTypes
 newtype UnionMemberTypes
   = UnionMemberTypes [NamedType]
-  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup)
+  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup, NFData)
 
 -- | http://facebook.github.io/graphql/draft/#UnionTypeExtension
 data UnionTypeExtension
@@ -390,6 +455,8 @@ data UnionTypeExtension
     Directives
     UnionMemberTypes
   deriving (Show, Eq, Generic, Data, Typeable)
+
+instance NFData UnionTypeExtension
 
 -- | http://facebook.github.io/graphql/draft/#EnumTypeDefinition
 data EnumTypeDefinition
@@ -400,10 +467,12 @@ data EnumTypeDefinition
     EnumValuesDefinition
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData EnumTypeDefinition
+
 -- | http://facebook.github.io/graphql/draft/#EnumValuesDefinition
 newtype EnumValuesDefinition
   = EnumValuesDefinition [EnumValueDefinition]
-  deriving (Show, Eq, Generic, Data, Typeable)
+  deriving (Show, Eq, Generic, Data, Typeable, NFData)
 
 -- | http://facebook.github.io/graphql/draft/#EnumValueDefinition
 data EnumValueDefinition
@@ -413,6 +482,8 @@ data EnumValueDefinition
     Directives
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData EnumValueDefinition
+
 -- | http://facebook.github.io/graphql/draft/#EnumTypeExtension
 data EnumTypeExtension
   = EnumTypeExtension
@@ -420,6 +491,8 @@ data EnumTypeExtension
     Directives
     EnumValuesDefinition
   deriving (Show, Eq, Generic, Data, Typeable)
+
+instance NFData EnumTypeExtension
 
 -- | InputObjectTypeDefinition
 -- http://facebook.github.io/graphql/draft/#InputObjectTypeDefinition
@@ -431,17 +504,21 @@ data InputObjectTypeDefinition
     InputFieldsDefinition
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData InputObjectTypeDefinition
+
 -- | InputFieldsDefinition
 -- http://facebook.github.io/graphql/draft/#InputFieldsDefinition
 newtype InputFieldsDefinition
   = InputFieldsDefinition [InputValueDefinition]
-  deriving (Show, Eq, Generic, Data, Typeable)
+  deriving (Show, Eq, Generic, Data, Typeable, NFData)
 
 -- | InputObjectTypeExtension
 -- http://facebook.github.io/graphql/draft/#InputObjectTypeExtension
 data InputObjectTypeExtension
   = InputObjectTypeExtension Name [Directive] InputFieldsDefinition
   deriving (Show, Eq, Generic, Data, Typeable)
+
+instance NFData InputObjectTypeExtension
 
 -- | Directive definition
 -- http://facebook.github.io/graphql/draft/#sec-Type-System.Directives
@@ -453,6 +530,8 @@ data DirectiveDefinition
     DirectiveLocations
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData DirectiveDefinition
+
 -- | http://facebook.github.io/graphql/draft/#DirectiveLocations
 type DirectiveLocations = [DirectiveLocation]
 
@@ -462,7 +541,9 @@ data DirectiveLocation
   | LocationTypeSystemDirective TypeSystemDirectiveLocation
   deriving (Show, Eq, Generic, Data, Typeable)
 
+instance NFData DirectiveLocation
+
 -- | A GraphQL 'Name'
 -- http://facebook.github.io/graphql/draft/#Name
 newtype Name = Name Text
-  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup)
+  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup, NFData)
