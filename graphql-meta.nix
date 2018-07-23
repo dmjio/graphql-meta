@@ -10,14 +10,14 @@ mkDerivation {
   isExecutable = true;
   libraryHaskellDepends = [
     array attoparsec base containers deepseq prettyprinter
-    template-haskell text criterion
+    template-haskell text
   ];
   libraryToolDepends = [ alex happy ];
   executableHaskellDepends = [ base text ];
   testHaskellDepends = [
     base hspec QuickCheck quickcheck-instances text
   ];
-  benchmarkHaskellDepends = [ base criterion ];
+  benchmarkHaskellDepends = [ base criterion text ];
   homepage = "https://github.com/urbint/graphql-meta";
   description = "Generic and meta programming facilities for GraphQL";
   license = stdenv.lib.licenses.bsd3;

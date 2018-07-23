@@ -5,11 +5,12 @@ module Main where
 import GraphQL.QQ
 import GraphQL.Pretty
 import GraphQL.Parser
+import Data.Text (pack, Text)
 
 import Criterion.Main
 
-someQuery :: String
-someQuery = show $ printExecutableDefinition [query|
+someQuery :: Text
+someQuery = pack $ show $ printExecutableDefinition [query|
 query HeroNameAndFriends($episode: Episode, $foobar : String! ) {
   hero(episode: $episode, wozloz: $foobar) {
     name
@@ -36,5 +37,5 @@ query HeroNameAndFriends($episode: Episode, $foobar : String! ) {
 
 main :: IO ()
 main = defaultMain [
-  bgroup "bench" [ bench "Parse graphQL query" (nf parseDocument someQuery) ]
+  bgroup "bench" [ bench "Parse graphQL query" (whnf parseDocument someQuery) ]
   ]

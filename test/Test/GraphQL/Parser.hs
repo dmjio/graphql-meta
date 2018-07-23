@@ -14,15 +14,18 @@ import           GraphQL.Parser
 
 import           Test.GraphQL.Gen
 
+toText :: Show a => a -> T.Text
+toText = T.pack . show
+
 parserSpec :: Spec
 parserSpec = do
   describe "Should parse a Value" $ do
     it "Should parse a float into a ValueFloat" $ property $ \x ->
-      value (show x) `shouldBe` Right (ValueFloat x)
+      value (toText x) `shouldBe` Right (ValueFloat x)
     it "Should parse a float into a ValueInt" $ property $ \x ->
-      value (show x) `shouldBe` Right (ValueInt x)
+      value (toText x) `shouldBe` Right (ValueInt x)
     it "Should parse a bool into a ValueBool" $ property $ \x -> do
-      let lower = map toLower . show
+      let lower = T.pack . map toLower . show
       value (lower x) `shouldBe` Right (ValueBoolean x)
     it "Should parse a float into a ValueNull" $
       value "null" `shouldBe` Right ValueNull
@@ -30,11 +33,11 @@ parserSpec = do
       value "\"hey\"" `shouldBe` Right (ValueString "hey")
     it "Should parse a float into a ValueVariable" $ property $ do
        name@(Name nameValue) <- generate genName
-       value (T.unpack ("$" <> nameValue)) `shouldBe`
+       value ("$" <> nameValue) `shouldBe`
          Right (ValueVariable (Variable name))
     it "Should parse a Name into a ValueEnum" $ property $ do
        name@(Name nameValue) <- generate genName
-       value (T.unpack nameValue) `shouldBe`
+       value nameValue `shouldBe`
          Right (ValueEnum (EnumValue name))
     it "Should parse an ObjectList into a ValueObject" $
        value "{ hey : 1, boo : 2 }" `shouldBe`
@@ -122,7 +125,7 @@ parserSpec = do
 
     it "Should parse a FragmentSpread" $ do
       let spread = "query withFragments { user(id: 4)"
-                ++ "{ friends(first: 10){ ...friendFields } } }"
+                <> "{ friends(first: 10){ ...friendFields } } }"
       gDef spread `shouldBe` Right
         (DefinitionExecutable (DefinitionOperation (OperationDefinition Query
           (Just (Name "withFragments")) [] [] [
@@ -135,8 +138,8 @@ parserSpec = do
 
     it "Should parse an InlineFragment" $ do
       let inlineFrag = "query inlineFragmentTyping { profiles(handles:"
-                    ++ "[\"zuck\", \"cocacola\"]) { ... "
-                    ++ "on User{friends{count}}}}"
+                    <> "[\"zuck\", \"cocacola\"]) { ... "
+                    <> "on User{friends{count}}}}"
       gDef inlineFrag `shouldBe` Right
         (DefinitionExecutable (DefinitionOperation (OperationDefinition Query
           (Just (Name "inlineFragmentTyping")) [] [] [

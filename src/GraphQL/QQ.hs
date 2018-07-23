@@ -70,7 +70,7 @@ parseGQLQuery
   :: String
   -> Q Exp
 parseGQLQuery
-  = either fail liftDataWithText . exeDef
+  = either fail liftDataWithText . exeDef . T.pack
   where
     liftDataWithText :: ExecutableDefinition -> Q Exp
     liftDataWithText edef = do

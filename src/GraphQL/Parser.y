@@ -1,5 +1,6 @@
 {
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE LambdaCase         #-}
 --------------------------------------------------------------------------------
@@ -19,6 +20,9 @@ module GraphQL.Parser
   , defs
   , parseDocument
   ) where
+--------------------------------------------------------------------------------
+import qualified Data.Text as T
+import           Data.Text (Text)
 --------------------------------------------------------------------------------
 import GraphQL.Lexer
 import GraphQL.AST
@@ -60,20 +64,20 @@ import GraphQL.AST
   operationType { TokenOperator $$ }
   executableDirectiveLocation { TokenExecutableDirectiveLocation $$ }
   typeSystemDirectiveLocation { TokenTypeSystemDirectiveLocation $$ }
-  '&'           { TokenPunctuator "&" }
-  '!'           { TokenPunctuator "!" }
-  '$'           { TokenPunctuator "$" }
-  '('           { TokenPunctuator "(" }
-  ')'           { TokenPunctuator ")" }
-  '...'         { TokenPunctuator "..." }
-  ':'           { TokenPunctuator ":" }
-  '='           { TokenPunctuator "=" }
-  '@'           { TokenPunctuator "@" }
-  '['           { TokenPunctuator "[" }
-  ']'           { TokenPunctuator "]" }
-  '{'           { TokenPunctuator "{" }
-  '|'           { TokenPunctuator "|" }
-  '}'           { TokenPunctuator "}" }
+  '&'           { TokenPunctuator '&' }
+  '!'           { TokenPunctuator '!' }
+  '$'           { TokenPunctuator '$' }
+  '('           { TokenPunctuator '(' }
+  ')'           { TokenPunctuator ')' }
+  '...'         { TokenMultiPunctuator "..." }
+  ':'           { TokenPunctuator ':' }
+  '='           { TokenPunctuator '=' }
+  '@'           { TokenPunctuator '@' }
+  '['           { TokenPunctuator '[' }
+  ']'           { TokenPunctuator ']' }
+  '{'           { TokenPunctuator '{' }
+  '|'           { TokenPunctuator '|' }
+  '}'           { TokenPunctuator '}' }
 
 %%
 
@@ -402,40 +406,42 @@ NonNullType :: { NonNullType }
 {
 
 -- | Parses a GraphQL 'Value'
-value :: String -> Either String Value
+value :: Text -> Either String Value
 value = parseValue . getTokens
 
 -- | Parses a GraphQL 'SelectionSet'
-selSet :: String -> Either String SelectionSet
+selSet :: Text -> Either String SelectionSet
 selSet = parseSelSet . getTokens
 
 -- | Parses a GraphQL 'OperationDefinition'
-opDef :: String -> Either String OperationDefinition
+opDef :: Text -> Either String OperationDefinition
 opDef = parseOpDef . getTokens
 
 -- | Parses a GraphQL '[Definition]'
-defs :: String -> Either String [Definition]
+defs :: Text -> Either String [Definition]
 defs = parseDefs . getTokens
 
 -- | Parses a GraphQL 'Definition'
-gDef :: String -> Either String Definition
+gDef :: Text -> Either String Definition
 gDef = parseDef . getTokens
 
 -- | Parses a GraphQL 'ExecutableDefinition'
-exeDef :: String -> Either String ExecutableDefinition
+exeDef :: Text -> Either String ExecutableDefinition
 exeDef = parseExeDef . getTokens
 
 -- | Parses a GraphQL 'Document'
-parseDocument :: String -> Either String Document
+parseDocument :: Text -> Either String Document
 parseDocument = parseDoc . getTokens
 
 parseError :: [Token] -> Either String a
 parseError tks =
-  Left $ "Parse error: " ++ explainToken (head tks)
+  Left $ "Parse error: " <> T.unpack (explainToken (head tks))
     where
       explainToken (TokenError err) = explainError err
-      explainToken t = show t
+      explainToken t = T.pack (show t)
       explainError (ConversionError errMsg s)
-        = errMsg ++ " at " ++ s
+        = errMsg <> " at " <> s
+      explainError (LexerError errMsg)
+        = errMsg
 
 }

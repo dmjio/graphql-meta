@@ -14,6 +14,7 @@ module Test.GraphQL.Lexer where
 import GraphQL.Lexer
 --------------------------------------------------------------------------------
 import Test.Hspec
+import Data.Text       (Text, pack)
 import Test.QuickCheck
 --------------------------------------------------------------------------------
 lexerSpec :: Spec
@@ -27,11 +28,14 @@ lexerSpec = do
   directiveSpec
   buildingSpec
 
+toText :: Show a => a -> Text
+toText = pack . show
+
 floatSpec :: Spec
 floatSpec =
   describe "Should lex floating point numbers" $ do
     it "should lex a Float" $ property $ \x ->
-      getTokens (show x) `shouldBe` [TokenFloat x]
+      getTokens (toText x) `shouldBe` [TokenFloat x]
     it "should lex float with capital 'E' exponent" $ do
       getTokens "-12.34E56" `shouldBe` [TokenFloat (-12.34E56) ]
       getTokens "12.34E56" `shouldBe` [TokenFloat 12.34E56 ]
@@ -40,9 +44,9 @@ intSpec :: Spec
 intSpec =
   describe "Should lex an Integer value" $ do
     it "should lex an Int" $ property $ \x  ->
-      getTokens (show x) `shouldBe` [TokenInt x]
+      getTokens (toText x) `shouldBe` [TokenInt x]
     it "should lex an Integer" $ property $ \(x::Integer) ->
-      getTokens (show x) `shouldBe` [TokenInt (fromIntegral x)]
+      getTokens (toText x) `shouldBe` [TokenInt (fromIntegral x)]
 
 punctuatorSpec :: Spec
 punctuatorSpec =
@@ -50,20 +54,20 @@ punctuatorSpec =
     it "should lex all valid punctuation" $
       getTokens "!$()...:=@[]{|}&"
         `shouldBe`
-        [ TokenPunctuator "!"
-        , TokenPunctuator "$"
-        , TokenPunctuator "("
-        , TokenPunctuator ")"
-        , TokenPunctuator "..."
-        , TokenPunctuator ":"
-        , TokenPunctuator "="
-        , TokenPunctuator "@"
-        , TokenPunctuator "["
-        , TokenPunctuator "]"
-        , TokenPunctuator "{"
-        , TokenPunctuator "|"
-        , TokenPunctuator "}"
-        , TokenPunctuator "&"
+        [ TokenPunctuator '!'
+        , TokenPunctuator '$'
+        , TokenPunctuator '('
+        , TokenPunctuator ')'
+        , TokenMultiPunctuator "..."
+        , TokenPunctuator ':'
+        , TokenPunctuator '='
+        , TokenPunctuator '@'
+        , TokenPunctuator '['
+        , TokenPunctuator ']'
+        , TokenPunctuator '{'
+        , TokenPunctuator '|'
+        , TokenPunctuator '}'
+        , TokenPunctuator '&'
         ]
 
 boolSpec :: Spec
@@ -142,10 +146,10 @@ buildingSpec =
     it "should lex a basic query" $
       getTokens "{building{floorCount}}"
         `shouldBe`
-        [ TokenPunctuator "{"
+        [ TokenPunctuator '{'
         , TokenName "building"
-        , TokenPunctuator "{"
+        , TokenPunctuator '{'
         , TokenName "floorCount"
-        , TokenPunctuator "}"
-        , TokenPunctuator "}"
+        , TokenPunctuator '}'
+        , TokenPunctuator '}'
         ]

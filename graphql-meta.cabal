@@ -83,7 +83,8 @@ benchmark benchmarks
   build-depends:
     base < 5,
     criterion,
-    graphql-meta
+    graphql-meta,
+    text
   ghc-options:
     -O2 -Wall
   main-is:

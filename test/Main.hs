@@ -8,6 +8,8 @@
 --------------------------------------------------------------------------------
 module Main where
 --------------------------------------------------------------------------------
+import qualified Data.Text as T
+--------------------------------------------------------------------------------
 import Test.GraphQL.Lexer  (lexerSpec)
 import Test.GraphQL.Parser (parserSpec)
 import Test.GraphQL.Gen    (genDocument)
@@ -24,4 +26,4 @@ main = hspec (lexerSpec >> parserSpec) >> roundTrip
     roundTrip =
       quickCheckWith stdArgs { maxSize = 100000, maxSuccess = 100000 } $
         forAll genDocument $ \doc ->
-           parseDocument (show (printDocument doc)) === Right doc
+           parseDocument (T.pack $ show (printDocument doc)) === Right doc
