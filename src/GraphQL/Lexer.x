@@ -23,12 +23,13 @@ module GraphQL.Lexer
 --------------------------------------------------------------------------------
 import           Text.Read
 import           Data.Data
-import           Data.Bits
-import           Data.Char
-import           Data.Word
 import           GHC.Generics
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import           Data.Text (Text)
+import qualified Data.ByteString as ByteString
+import qualified Data.ByteString.Char8 as B8
+import qualified Data.ByteString.Internal as ByteString (w2c)
 import           Control.DeepSeq
 --------------------------------------------------------------------------------
 }
@@ -143,23 +144,23 @@ $comma = \,
 tokens :-
   @ignored ;
   @intToken { \s ->
-    maybe (TokenError $ ConversionError "Not a valid int" s) TokenInt (readMaybe (T.unpack s)) }
+    maybe (TokenError $ ConversionError "Not a valid int" (T.decodeUtf8 s)) TokenInt (readMaybe (B8.unpack s)) }
   @floatToken { \s ->
-    maybe (TokenError $ ConversionError "Not a valid float" s) TokenFloat (readMaybe (T.unpack s)) }
-  @stringToken { TokenString . processString }
-  "..." { TokenMultiPunctuator }
-  @reserved { TokenReserved }
-  @punctuator { TokenPunctuator . T.head }
+    maybe (TokenError $ ConversionError "Not a valid float" (T.decodeUtf8 s)) TokenFloat (readMaybe (B8.unpack s)) }
+  @stringToken { TokenString . processString . T.decodeUtf8 }
+  "..." { TokenMultiPunctuator . T.decodeUtf8 }
+  @reserved { TokenReserved . T.decodeUtf8 }
+  @punctuator { TokenPunctuator . T.head . T.decodeUtf8 }
   @nullToken { \s -> case s of
     "null" -> TokenNull
-    _ -> TokenError (ConversionError "Not a null value" s)
+    _ -> TokenError (ConversionError "Not a null value" (T.decodeUtf8 s))
   }
   @boolToken { \s ->
     case s of
       "true" -> TokenBool True
       "false" -> TokenBool False
       _ ->
-        TokenError (ConversionError "Invalid boolean value" s)
+        TokenError (ConversionError "Invalid boolean value" (T.decodeUtf8 s))
   }
   @operationToken { \s ->
     case s of
@@ -167,19 +168,20 @@ tokens :-
       "mutation" -> TokenOperator Mutation
       "subscription" -> TokenOperator Subscription
       _ ->
-        TokenError (ConversionError "Invalid operator (query, mutation, subscription)" s)
+        TokenError (ConversionError "Invalid operator (query, mutation, subscription)" (T.decodeUtf8 s))
   }
   @executableDirectiveLocationToken { \s ->
-    case readMaybe (T.unpack s) :: Maybe ExecutableDirectiveLocation of
+    case readMaybe (B8.unpack s) :: Maybe ExecutableDirectiveLocation of
       Just r -> TokenExecutableDirectiveLocation r
-      Nothing -> TokenError (ConversionError "Invalid ExecutableDirectiveLocation" s)
+      Nothing -> TokenError (ConversionError "Invalid ExecutableDirectiveLocation" (T.decodeUtf8 s))
   }
   @typeSystemDirectiveLocationToken { \s ->
-    case readMaybe (T.unpack s) :: Maybe TypeSystemDirectiveLocation of
+    case readMaybe (B8.unpack s) :: Maybe TypeSystemDirectiveLocation of
       Just r -> TokenTypeSystemDirectiveLocation r
-      Nothing -> TokenError (ConversionError "Invalid TypeSystemDirectiveLocation" s)
+      Nothing -> TokenError (ConversionError "Invalid TypeSystemDirectiveLocation" (T.decodeUtf8 s))
   }
-  @name { TokenName }
+  @name { TokenName . T.decodeUtf8 }
+
 {
 
 -- | A GraphQL 'Operation' type
@@ -246,72 +248,38 @@ data Error
 instance NFData Error
 
 -- | Retrieve GraphQL tokens
-getTokens :: Text -> [Token]
-getTokens txt = go (AlexInput '\n' [] txt) 0
+getTokens = alexScanTokens
+
+alexScanTokens str = go (AlexInput '\n' str 0)
   where
-    go :: AlexInput -> Int -> [Token]
-    go input code =
-      case alexScan input code of
+    go inp =
+      case alexScan inp 0 of
         AlexEOF -> []
-        AlexError inp -> [TokenError (LexerError (currInput inp))]
-        AlexSkip inp _ -> go inp code
-        AlexToken inp len action ->
-          action (T.take len (currInput input)) : go inp code
+        AlexError _ -> error "lexical error"
+        AlexSkip  inp' _  -> go inp'
+        AlexToken inp' _ act -> do
+          let len = alexBytePos inp' - alexBytePos inp
+          act (ByteString.take len (alexStr inp)) : go inp'
 
 data AlexInput = AlexInput
-    { prevChar  :: Char
-    , currBytes :: [Word8]
-    , currInput :: Text
-    }
+  { alexChar :: {-# UNPACK #-} !Char
+  , alexStr :: {-# UNPACK #-} !ByteString.ByteString
+  , alexBytePos :: {-# UNPACK #-} !Int
+  }
 
 alexInputPrevChar :: AlexInput -> Char
-alexInputPrevChar = prevChar
+alexInputPrevChar = alexChar
 
-alexGetByte :: AlexInput -> Maybe (Word8,AlexInput)
-alexGetByte (AlexInput c bytes text) = case bytes of
-    b:ytes -> Just (b, AlexInput c ytes text)
-    []     -> case T.uncons text of
-        Nothing       -> Nothing
-        Just (t, ext) -> case encode t of
-            (b, ytes) -> Just (b, AlexInput t ytes ext)
+alexGetByte (AlexInput {alexStr=cs,alexBytePos=n}) =
+    case ByteString.uncons cs of
+        Nothing -> Nothing
+        Just (c, rest) ->
+            Just (c, AlexInput {
+                alexChar = ByteString.w2c c,
+                alexStr =  rest,
+                alexBytePos = n+1})
 
-encode :: Char -> (Word8, [Word8])
-encode c = (fromIntegral h, map fromIntegral t)
-  where
-    (h, t) = go (ord c)
-
-    go n
-        | n <= 0x7f   = (n, [])
-        | n <= 0x7ff  = (0xc0 + (n `shiftR` 6), [0x80 + n .&. 0x3f])
-        | n <= 0xffff =
-            (   0xe0 + (n `shiftR` 12)
-            ,   [   0x80 + ((n `shiftR` 6) .&. 0x3f)
-                ,   0x80 + n .&. 0x3f
-                ]
-            )
-        | otherwise   =
-            (   0xf0 + (n `shiftR` 18)
-            ,   [   0x80 + ((n `shiftR` 12) .&. 0x3f)
-                ,   0x80 + ((n `shiftR` 6) .&. 0x3f)
-                ,   0x80 + n .&. 0x3f
-                ]
-            )
-
-utf8Encode :: Char -> [Word8]
-utf8Encode = map fromIntegral . go . ord
- where
-  go oc
-   | oc <= 0x7f = [oc]
-   | oc <= 0x7ff      = [ 0xc0 + (oc `Data.Bits.shiftR` 6), 0x80 + oc Data.Bits..&. 0x3f
-                        ]
-   | oc <= 0xffff     = [ 0xe0 + (oc `Data.Bits.shiftR` 12), 0x80 + ((oc `Data.Bits.shiftR` 6) Data.Bits..&. 0x3f)
-                        , 0x80 + oc Data.Bits..&. 0x3f ]
-   | otherwise        = [ 0xf0 + (oc `Data.Bits.shiftR` 18)
-                        , 0x80 + ((oc `Data.Bits.shiftR` 12) Data.Bits..&. 0x3f)
-                        , 0x80 + ((oc `Data.Bits.shiftR` 6) Data.Bits..&. 0x3f)
-                        , 0x80 + oc Data.Bits..&. 0x3f
-                        ]
-
--- | String sanitizing
 processString :: Text -> Text
-processString = T.reverse . T.drop 1 . T.reverse . T.drop 1 }
+processString = T.reverse . T.drop 1 . T.reverse . T.drop 1
+
+}

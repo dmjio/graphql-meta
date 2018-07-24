@@ -2,15 +2,17 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Main where
 
-import GraphQL.QQ
-import GraphQL.Pretty
-import GraphQL.Parser
-import Data.Text (pack, Text)
-
 import Criterion.Main
+import Data.ByteString    (ByteString)
+import Data.Text          (pack)
+import Data.Text.Encoding (encodeUtf8)
 
-someQuery :: Text
-someQuery = pack $ show $ printExecutableDefinition [query|
+import GraphQL.Parser
+import GraphQL.Pretty
+import GraphQL.QQ
+
+someQuery :: ByteString
+someQuery = encodeUtf8 $ pack $ show $ printExecutableDefinition [query|
 query HeroNameAndFriends($episode: Episode, $foobar : String! ) {
   hero(episode: $episode, wozloz: $foobar) {
     name
@@ -37,5 +39,5 @@ query HeroNameAndFriends($episode: Episode, $foobar : String! ) {
 
 main :: IO ()
 main = defaultMain [
-  bgroup "bench" [ bench "Parse graphQL query" (whnf parseDocument someQuery) ]
+  bgroup "bench" [ bench "Parse graphQL query" (nf parseDocument someQuery) ]
   ]

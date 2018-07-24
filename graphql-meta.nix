@@ -10,7 +10,7 @@ mkDerivation {
   isExecutable = true;
   libraryHaskellDepends = [
     array attoparsec base containers deepseq prettyprinter
-    template-haskell text
+    template-haskell text criterion
   ];
   libraryToolDepends = [ alex happy ];
   executableHaskellDepends = [ base text ];

@@ -7,25 +7,26 @@ import           Data.Either
 import           Test.Hspec
 import           Test.QuickCheck
 
+import           Data.ByteString  (ByteString)
 import qualified Data.Text        as T
+import qualified Data.Text.Encoding as T
 import           GraphQL.AST
 import           GraphQL.Lexer
 import           GraphQL.Parser
-
 import           Test.GraphQL.Gen
 
-toText :: Show a => a -> T.Text
-toText = T.pack . show
+toBs :: Show a => a -> ByteString
+toBs = T.encodeUtf8 . T.pack . show
 
 parserSpec :: Spec
 parserSpec = do
   describe "Should parse a Value" $ do
     it "Should parse a float into a ValueFloat" $ property $ \x ->
-      value (toText x) `shouldBe` Right (ValueFloat x)
+      value (toBs x) `shouldBe` Right (ValueFloat x)
     it "Should parse a float into a ValueInt" $ property $ \x ->
-      value (toText x) `shouldBe` Right (ValueInt x)
+      value (toBs x) `shouldBe` Right (ValueInt x)
     it "Should parse a bool into a ValueBool" $ property $ \x -> do
-      let lower = T.pack . map toLower . show
+      let lower = T.encodeUtf8 . T.pack . map toLower . show
       value (lower x) `shouldBe` Right (ValueBoolean x)
     it "Should parse a float into a ValueNull" $
       value "null" `shouldBe` Right ValueNull
@@ -33,11 +34,11 @@ parserSpec = do
       value "\"hey\"" `shouldBe` Right (ValueString "hey")
     it "Should parse a float into a ValueVariable" $ property $ do
        name@(Name nameValue) <- generate genName
-       value ("$" <> nameValue) `shouldBe`
+       value ("$" <> T.encodeUtf8 nameValue) `shouldBe`
          Right (ValueVariable (Variable name))
     it "Should parse a Name into a ValueEnum" $ property $ do
        name@(Name nameValue) <- generate genName
-       value nameValue `shouldBe`
+       value (T.encodeUtf8 nameValue) `shouldBe`
          Right (ValueEnum (EnumValue name))
     it "Should parse an ObjectList into a ValueObject" $
        value "{ hey : 1, boo : 2 }" `shouldBe`

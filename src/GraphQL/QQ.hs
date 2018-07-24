@@ -31,6 +31,7 @@ import           Data.Maybe
 import           Data.Set                   (Set)
 import qualified Data.Set                   as S
 import qualified Data.Text                  as T
+import qualified Data.Text.Encoding         as T
 import           Language.Haskell.TH.Lib
 import           Language.Haskell.TH.Quote
 import           Language.Haskell.TH.Syntax hiding (Name)
@@ -70,7 +71,7 @@ parseGQLQuery
   :: String
   -> Q Exp
 parseGQLQuery
-  = either fail liftDataWithText . exeDef . T.pack
+  = either fail liftDataWithText . exeDef . T.encodeUtf8 . T.pack
   where
     liftDataWithText :: ExecutableDefinition -> Q Exp
     liftDataWithText edef = do

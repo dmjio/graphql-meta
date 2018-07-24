@@ -8,16 +8,17 @@
 --------------------------------------------------------------------------------
 module Main where
 --------------------------------------------------------------------------------
-import qualified Data.Text as T
+import qualified Data.Text           as T
+import qualified Data.Text.Encoding  as T
 --------------------------------------------------------------------------------
-import Test.GraphQL.Lexer  (lexerSpec)
-import Test.GraphQL.Parser (parserSpec)
-import Test.GraphQL.Gen    (genDocument)
-import GraphQL.Pretty      (printDocument)
-import GraphQL.Parser      (parseDocument)
+import           Test.GraphQL.Lexer  (lexerSpec)
+import           Test.GraphQL.Parser (parserSpec)
+import           Test.GraphQL.Gen    (genDocument)
+import           GraphQL.Pretty      (printDocument)
+import           GraphQL.Parser      (parseDocument)
 --------------------------------------------------------------------------------
-import Test.Hspec
-import Test.QuickCheck
+import           Test.Hspec
+import           Test.QuickCheck
 --------------------------------------------------------------------------------
 main :: IO ()
 main = hspec (lexerSpec >> parserSpec) >> roundTrip
@@ -26,4 +27,4 @@ main = hspec (lexerSpec >> parserSpec) >> roundTrip
     roundTrip =
       quickCheckWith stdArgs { maxSize = 100000, maxSuccess = 100000 } $
         forAll genDocument $ \doc ->
-           parseDocument (T.pack $ show (printDocument doc)) === Right doc
+           parseDocument (T.encodeUtf8 . T.pack $ show (printDocument doc)) === Right doc

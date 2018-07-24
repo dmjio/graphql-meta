@@ -23,6 +23,7 @@ module GraphQL.Parser
 --------------------------------------------------------------------------------
 import qualified Data.Text as T
 import           Data.Text (Text)
+import Data.ByteString (ByteString)
 --------------------------------------------------------------------------------
 import GraphQL.Lexer
 import GraphQL.AST
@@ -406,31 +407,31 @@ NonNullType :: { NonNullType }
 {
 
 -- | Parses a GraphQL 'Value'
-value :: Text -> Either String Value
+value :: ByteString -> Either String Value
 value = parseValue . getTokens
 
 -- | Parses a GraphQL 'SelectionSet'
-selSet :: Text -> Either String SelectionSet
+selSet :: ByteString -> Either String SelectionSet
 selSet = parseSelSet . getTokens
 
 -- | Parses a GraphQL 'OperationDefinition'
-opDef :: Text -> Either String OperationDefinition
+opDef :: ByteString -> Either String OperationDefinition
 opDef = parseOpDef . getTokens
 
 -- | Parses a GraphQL '[Definition]'
-defs :: Text -> Either String [Definition]
+defs :: ByteString -> Either String [Definition]
 defs = parseDefs . getTokens
 
 -- | Parses a GraphQL 'Definition'
-gDef :: Text -> Either String Definition
+gDef :: ByteString -> Either String Definition
 gDef = parseDef . getTokens
 
 -- | Parses a GraphQL 'ExecutableDefinition'
-exeDef :: Text -> Either String ExecutableDefinition
+exeDef :: ByteString -> Either String ExecutableDefinition
 exeDef = parseExeDef . getTokens
 
 -- | Parses a GraphQL 'Document'
-parseDocument :: Text -> Either String Document
+parseDocument :: ByteString -> Either String Document
 parseDocument = parseDoc . getTokens
 
 parseError :: [Token] -> Either String a
