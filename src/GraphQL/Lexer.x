@@ -72,16 +72,9 @@ $sign = [\+\-]
 $sourceCharacter = [\x0009\x000A\x000D\x0020-\xFFFF]
 @byteOrderMark = \xFEFE
 @whitespace = \x0009 | \x0020
-@newLine = \x000A
-@carriageReturn = \x000D
-@notNewLine = . # \n
-@lineTerminator
-  = @newLine
-  | @carriageReturn @newLine
-  | @carriageReturn @notNewLine
+@lineTerminator = \x000A | \x000D \x000A | \x000D .
 
-@commentChar = $sourceCharacter # \x000A # \x000D \x000A
-@comment = \# (@commentChar+)?
+@comment = "#" ($sourceCharacter # \n)*
 $comma = \,
 @punctuator = [\!\$\(\)\:\=\@\[\]\{\|\}\&]
 @name = [_A-Za-z][_0-9A-Za-z]*
@@ -142,6 +135,7 @@ $comma = \,
   | schema
 
 tokens :-
+ <0> {
   @ignored ;
   @intToken { \s ->
     maybe (TokenError $ ConversionError "Not a valid int" (T.decodeUtf8 s)) TokenInt (readMaybe (B8.unpack s)) }
@@ -181,6 +175,7 @@ tokens :-
       Nothing -> TokenError (ConversionError "Invalid TypeSystemDirectiveLocation" (T.decodeUtf8 s))
   }
   @name { TokenName . T.decodeUtf8 }
+  }
 
 {
 
@@ -255,7 +250,7 @@ alexScanTokens str = go (AlexInput '\n' str 0)
     go inp =
       case alexScan inp 0 of
         AlexEOF -> []
-        AlexError _ -> error "lexical error"
+        AlexError e -> [TokenError $ LexerError (T.decodeUtf8 (alexStr e))]
         AlexSkip  inp' _  -> go inp'
         AlexToken inp' _ act -> do
           let len = alexBytePos inp' - alexBytePos inp

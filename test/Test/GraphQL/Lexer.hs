@@ -29,6 +29,7 @@ lexerSpec = do
   operationSpec
   directiveSpec
   buildingSpec
+  commentSpec
 
 toBs :: Show a => a -> ByteString
 toBs = T.encodeUtf8 . T.pack . show
@@ -147,6 +148,20 @@ buildingSpec =
   describe "Should lex an example query" $
     it "should lex a basic query" $
       getTokens "{building{floorCount}}"
+        `shouldBe`
+        [ TokenPunctuator '{'
+        , TokenName "building"
+        , TokenPunctuator '{'
+        , TokenName "floorCount"
+        , TokenPunctuator '}'
+        , TokenPunctuator '}'
+        ]
+
+commentSpec :: Spec
+commentSpec =
+  describe "Should lex an example query w/ comments" $
+    it "should lex a basic query" $
+      getTokens "{building #some build existings\n { #this is floorcount\n floorCount} #yay a floor count\n }"
         `shouldBe`
         [ TokenPunctuator '{'
         , TokenName "building"
