@@ -42,7 +42,7 @@ $sign = [\+\-]
 
 @integerPart
   = $negativeSign? $zero
-  | $negativeSign? $nonZeroDigit ($digit+)?
+  | $negativeSign? $nonZeroDigit $digit*
 
 @intToken
   = @integerPart
@@ -74,24 +74,28 @@ $sourceCharacter = [\x0009\x000A\x000D\x0020-\xFFFF]
 @whitespace = \x0009 | \x0020
 @lineTerminator = \x000A | \x000D \x000A | \x000D .
 
-@comment = "#" ($sourceCharacter # \n)*
+@comment = "#" ($sourceCharacter # \n # [\r\n])*
 $comma = \,
 @punctuator = [\!\$\(\)\:\=\@\[\]\{\|\}\&]
 @name = [_A-Za-z][_0-9A-Za-z]*
 @escapedCharacter
-  = [\"\\\/\b\f\n\r\t]
+  = [\"\\\/bfnrt]
 
 @escapedUnicode
   = [0-9A-Fa-f]{4}
 
 @stringCharacter
-  = $sourceCharacter # \" # \\
+  = $sourceCharacter # [\"\n\\]
   | \\u @escapedUnicode
   | \\ @escapedCharacter
 
+@blockStringCharacter
+  = $sourceCharacter # [\"\"\"] # [\\\"\"\"]
+  | \\\"\"\"
+
 @stringToken
-  = \"\"\" ($sourceCharacter+)? \"\"\"
-  | \" (@stringCharacter+)? \"
+  = \" @stringCharacter* \"
+  | \"\"\" @blockStringCharacter* \"\"\"
 
 @ignored
   = @byteOrderMark
@@ -143,7 +147,7 @@ tokens :-
     maybe (TokenError $ ConversionError "Not a valid int" (T.decodeUtf8 s)) TokenInt (readMaybe (B8.unpack s)) }
   @floatToken { \s ->
     maybe (TokenError $ ConversionError "Not a valid float" (T.decodeUtf8 s)) TokenFloat (readMaybe (B8.unpack s)) }
-  @stringToken { TokenString . processString . T.decodeUtf8 }
+  @stringToken { TokenString . T.decodeUtf8 }
   "..." { TokenMultiPunctuator . T.decodeUtf8 }
   @reserved { TokenReserved . T.decodeUtf8 }
   @punctuator { TokenPunctuator . T.head . T.decodeUtf8 }
@@ -275,8 +279,5 @@ alexGetByte (AlexInput {alexStr=cs,alexBytePos=n}) =
                 alexChar = ByteString.w2c c,
                 alexStr =  rest,
                 alexBytePos = n+1})
-
-processString :: Text -> Text
-processString = T.reverse . T.drop 1 . T.reverse . T.drop 1
 
 }

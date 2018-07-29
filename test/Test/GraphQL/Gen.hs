@@ -60,7 +60,8 @@ genValue =
   , ValueString <$>
       oneof [ genStringCharacters
             , genUnicode
-            --, genBlockStringCharacter
+            , genBlockStringCharacters
+            , genEscapedCharacters
             ]
   , ValueBoolean <$> arbitrary
   , pure ValueNull
@@ -74,39 +75,44 @@ genValue =
   ]
 
 genStringCharacters :: Gen Text
-genStringCharacters = T.pack <$> do
-  n <- choose (0, 40)
-  replicateM n $ elements $ filter (`notElem` ['\n','\r','"','\\']) chars
-    where
-      chars = [ '\x9', '\xa', '\xd'] ++ ['\x20' .. '\xff']
+genStringCharacters = do
+  r <- T.pack <$> do
+    n <- choose (0, 40)
+    replicateM n $ elements $ filter (`notElem` ['\n','\r','"','\\']) chars
+  pure ("\"" <> r <> "\"")
+      where
+        chars = [ '\x9', '\xa', '\xd'] ++ ['\x20' .. '\xff']
 
-genBlockStringCharacter :: Gen Text
-genBlockStringCharacter = do
+genBlockStringCharacters :: Gen Text
+genBlockStringCharacters = do
   str <- genStringCharacters
-  pure ("\"\"\"" <> str <> "\"\"\"")
+  pure ("\"\"" <> str <> "\"\"")
 
 genUnicode :: Gen Text
-genUnicode = T.pack <$> do
-  elements $ do
+genUnicode = do
+  r <- T.pack <$> do
+    elements $ do
       b <- alpha
       c <- alpha
       d <- alpha
       e <- alpha
-      pure $ "\\u" ++ [b,c,d,e]
-      where
-        alpha = ['a'..'f']
-             ++ ['A'..'F']
-             ++ ['0'..'9']
+      pure $ "\\" ++ "u" ++ [b,c,d,e]
+  pure ("\"" <> r <> "\"")
+        where
+          alpha = ['a'..'f']
+               ++ ['A'..'F']
+               ++ ['0'..'9']
 
-genEscapedCharacter :: Gen T.Text
-genEscapedCharacter = T.pack <$> do
-  elements $ do
-    b <- chars
-    pure $ "\\" ++ [b]
-      where
-        chars :: String
-        chars = ['\"','\\','/','b','f','n','r','t']
-
+genEscapedCharacters :: Gen T.Text
+genEscapedCharacters = do
+  r <- T.pack <$> do
+    elements $ do
+      b <- chars
+      pure $ "\\" ++ [b]
+  pure ("\"" <> r <> "\"")
+     where
+       chars :: String
+       chars = ['\"','\\','/','b','f','n','r','t']
 
 genObjectField :: Gen ObjectField
 genObjectField =
