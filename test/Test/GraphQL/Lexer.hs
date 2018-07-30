@@ -187,7 +187,7 @@ multiStringSpec =
         ,TokenPunctuator '('
         ,TokenName "id"
         ,TokenPunctuator ':'
-        ,TokenString "\"\"\"hey\n\"\"\""
+        ,TokenString "hey\n"
         ,TokenPunctuator ')'
         ,TokenPunctuator '{'
         ,TokenName "floorCount"
@@ -223,10 +223,10 @@ multiMultiStringSpec =
         ,TokenPunctuator '('
         ,TokenName "id"
         ,TokenPunctuator ':'
-        ,TokenString "\"\"\"hey\n\"\"\""
+        ,TokenString "hey\n"
         ,TokenName "hah"
         ,TokenPunctuator ':'
-        ,TokenString "\"\"\"foo\"\"\""
+        ,TokenString "foo"
         ,TokenPunctuator ')'
         ,TokenPunctuator '{'
         ,TokenName "floorCount"

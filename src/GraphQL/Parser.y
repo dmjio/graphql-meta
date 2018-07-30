@@ -482,5 +482,11 @@ parseError tks = Left (show tks)
         = errMsg <> " at " <> s
       explainError (LexerError errMsg)
         = errMsg
-     -}
+      explainError (NoMatch c)
+        = "Couldn't match on " <> T.singleton c
+      explainError UntermBlockString
+        = "Unterminated block string"
+      explainError UntermString
+        = "Unterminated string"
+
 }

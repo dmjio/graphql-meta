@@ -26,6 +26,7 @@ import           Data.ByteString (ByteString)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Control.Monad.State
+import           Debug.Trace
 --------------------------------------------------------------------------------
 import           GraphQL.LexerUtils
 --------------------------------------------------------------------------------
@@ -58,7 +59,7 @@ $zero = 0
   | @integerPart @fractionalPart @exponentPart
 
 @escapedUnicode = [0-9A-Fa-f]{4}
-@escapedCharacter = [\"\/\\\b\f\n\r\t]
+-- @escapedCharacter = [\"\/\\\b\f\n\r\t]
 @byteOrderMark = \xFEFE
 @whitespace = \x0009 | \x0020
 @lineTerminator = \x000A | \x000D \x000A | \x000D .
@@ -68,22 +69,6 @@ $zero = 0
 @name = [_A-Za-z][_0-9A-Za-z]*
 @escapedCharacter
   = [\"\\\/bfnrt]
-
-@escapedUnicode
-  = [0-9A-Fa-f]{4}
-
-@stringCharacter
-  = $sourceCharacter # [\"\n\\]
-  | \\u @escapedUnicode
-  | \\ @escapedCharacter
-
-@blockStringCharacter
-  = $sourceCharacter # [\"\"\"] # [\\\"\"\"]
-  | \\\"\"\"
-
-@stringToken
-  = \" @stringCharacter* \"
-  | \"\"\" @blockStringCharacter* \"\"\"
 
 @ignored
   = @byteOrderMark
@@ -154,16 +139,17 @@ tokens :-
   \"\"\" { endMode }
  }
  <string> {
-   "\\" @escapedCharacter { processEscapedCharacter }
-   "\\u" @escapedCharacter { processEscapedUnicode }
+   \ @escapedCharacter { processEscapedCharacter }
+   \u @escapedUnicode { processEscapedUnicode }
    $sourceCharacter # [\"\n\\] { appendMode }
-   "\"" { endMode }
+   \" { endMode }
  }
 
 {
 getTokens :: ByteString -> [Token]
 getTokens = alexScanTokens
 
+mkInput :: ByteString -> AlexInput
 mkInput s = AlexInput '\n' s 0
 
 alexScanTokens :: ByteString -> [Token]
@@ -180,13 +166,13 @@ alexScanTokens input = flip evalState (LexerState (mkInput input) InNormal mempt
           go
         AlexToken alexInput _ act -> do
           let len = alexBytePos alexInput - alexBytePos matchedInput
-          modify $ \s -> s {
-            matchedInput = alexInput
-          }
           r <- act len matchedInput
+          modify $ \s -> s { matchedInput = alexInput  }
           case r of
             Nothing -> go
-            Just t -> (t:) <$> go
+            Just t -> do
+	      ts <- go
+	      pure (t:ts)
 
 stateToInt :: LexerMode -> Int
 stateToInt InNormal{}      = 0

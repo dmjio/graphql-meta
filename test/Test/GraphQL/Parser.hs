@@ -31,9 +31,9 @@ parserSpec = do
     it "Should parse a float into a ValueNull" $
       value "null" `shouldBe` Right ValueNull
     it "Should parse a String into a ValueString" $
-      value "\"hey\"" `shouldBe` Right (ValueString "\"hey\"")
+      value "\"hey\"" `shouldBe` Right (ValueString "hey")
     it "Should parse a multline String into a ValueString" $
-      value "\"\"\"hey\n\"\"\"" `shouldBe` Right (ValueString "\"\"\"hey\n\"\"\"")
+      value "\"\"\"hey\n\"\"\"" `shouldBe` Right (ValueString "hey\n")
     it "Should parse a float into a ValueVariable" $ property $ do
        name@(Name nameValue) <- generate genName
        value ("$" <> T.encodeUtf8 nameValue) `shouldBe`
@@ -53,7 +53,7 @@ parserSpec = do
                          , ValueList []
                          , ValueList [ValueInt 3, ValueList [ValueInt 4,ValueInt 5, ValueList []]]
                          , ValueObject [ObjectField (Name "hey")
-                             (ValueObject [ObjectField (Name "foo") (ValueString "\"there\"")])]
+                             (ValueObject [ObjectField (Name "foo") (ValueString "there")])]
                          , ValueObject []
                          ])
 
@@ -74,7 +74,7 @@ parserSpec = do
         [ SelectionField (Field Nothing (Name "building") [] [] [
            SelectionField (Field Nothing (Name "floorCount") [
              Argument (Name "id") (ValueInt 3)
-           , Argument (Name "foo") (ValueString "\"bar\"")
+           , Argument (Name "foo") (ValueString "bar")
            ] [] []) ]) ]
 
     it "Should parse a Selection Set w/ Directives" $
@@ -148,7 +148,7 @@ parserSpec = do
           (Just (Name "inlineFragmentTyping")) [] [] [
             SelectionField (Field Nothing (Name "profiles") [
               Argument (Name "handles") (ValueList [
-                ValueString "\"zuck\"",ValueString "\"cocacola\""])] [] [
+                ValueString "zuck",ValueString "cocacola"])] [] [
                   SelectionInlineFragment (InlineFragment (Just (TypeCondition
                     (NamedType (Name "User")))) [] [
                       SelectionField (Field Nothing (Name "friends") [] [] [

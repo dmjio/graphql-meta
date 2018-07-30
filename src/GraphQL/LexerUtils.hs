@@ -148,9 +148,9 @@ endMode _ _ = do
     InString -> apply
   where
     apply = do
-      modify $ \s -> s { lexerMode = InNormal }
       buf <- gets stringBuffer
-      pure $ Just $ TokenString (T.decodeUtf8 buf)
+      modify $ \s -> s { lexerMode = InNormal, stringBuffer = mempty }
+      pure $ Just $ TokenString $ T.reverse (T.decodeUtf8 buf)
 
 eofAction :: State LexerState [Token]
 eofAction = do
