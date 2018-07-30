@@ -55,14 +55,14 @@ multipleSubstitution
   -> String
   -> ExecutableDefinition
 multipleSubstitution a b c d
-  = [query| { a(param: $b) { c d } } |]
+  = undefined
 
 -- | QuasiQuotation single substitution example
 singleSubstitution
   :: String
   -> ExecutableDefinition
 singleSubstitution hi
-  = [query| query WhoHah ($id: String!) { building(id: $hi) { floorCount } }|]
+  = undefined
 
 -- | Example of using GHC.Generics to create a Schema from a product type
 data Person = Person

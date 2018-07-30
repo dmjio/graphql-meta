@@ -80,13 +80,24 @@ genStringCharacters = do
     n <- choose (0, 40)
     replicateM n $ elements $ filter (`notElem` ['\n','\r','"','\\']) chars
   pure ("\"" <> r <> "\"")
-      where
-        chars = [ '\x9', '\xa', '\xd'] ++ ['\x20' .. '\xff']
+    where
+      chars :: String
+      chars = [ '\x9', '\xa', '\xd'] ++ ['\x20' .. '\xff']
 
 genBlockStringCharacters :: Gen Text
 genBlockStringCharacters = do
-  str <- genStringCharacters
+  str <- genBlockCharacters
   pure ("\"\"" <> str <> "\"\"")
+
+genBlockCharacters :: Gen Text
+genBlockCharacters = do
+  r <- T.pack <$> do
+    n <- choose (0, 40)
+    replicateM n (elements chars)
+  pure ("\"" <> r <> "\"")
+    where
+      chars :: String
+      chars = [ '\x9', '\xa', '\xd'] ++ ['\x20' .. '\xff']
 
 genUnicode :: Gen Text
 genUnicode = do

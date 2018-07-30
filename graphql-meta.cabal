@@ -21,6 +21,8 @@ library
     GraphQL.Pretty
     GraphQL.Generic
     GraphQL.Lexer
+  other-modules:
+    GraphQL.LexerUtils
   build-depends:
     array,
     bytestring,
@@ -28,6 +30,7 @@ library
     base < 5,
     containers,
     deepseq,
+    mtl,
     text,
     prettyprinter,
     template-haskell,
