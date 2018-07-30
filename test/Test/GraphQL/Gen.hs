@@ -57,7 +57,7 @@ genValue =
     ValueVariable <$> genVariable
   , ValueInt <$> arbitrary
   , ValueFloat <$> arbitrary
- , ValueString <$>
+  , ValueString <$>
      oneof [ genStringCharacters
            -- , genUnicode
            -- , genBlockStringCharacters
@@ -74,27 +74,22 @@ genValue =
         flip replicateM genObjectField
   ]
 
-genStringCharacters :: Gen Text
-genStringCharacters = pure "foo"
-  -- r <- T.pack <$> do
-  --   n <- choose (0, 40)
-  --   replicateM n $ elements $ filter (`notElem` ['\n','\r','"','\\']) chars
-  -- pure ("\"" <> r <> "\"")
-  --   where
-  --     chars :: String
-  --     chars = [ '\x9', '\xa', '\xd'] ++ ['\x20' .. '\xff']
+genStringCharacters :: Gen StringValue
+genStringCharacters =
+  StringValue SingleLine .
+    T.pack <$> do
+      n <- choose (0, 40)
+      replicateM n $ elements $ filter (`notElem` ['\n','\r','"','\\']) chars
+    where
+      chars :: String
+      chars = [ '\x9', '\xa', '\xd'] ++ ['\x20' .. '\xff']
 
-genBlockStringCharacters :: Gen Text
-genBlockStringCharacters = do
-  str <- genBlockCharacters
-  pure ("\"\"" <> str <> "\"\"")
-
-genBlockCharacters :: Gen Text
-genBlockCharacters = do
-  r <- T.pack <$> do
-    n <- choose (0, 40)
-    replicateM n (elements chars)
-  pure ("\"" <> r <> "\"")
+genBlockStringCharacters :: Gen StringValue
+genBlockStringCharacters =
+  StringValue BlockString .
+    T.pack <$> do
+      n <- choose (0, 40)
+      replicateM n $ elements $ filter (`notElem` ['\\', '"']) chars
     where
       chars :: String
       chars = [ '\x9', '\xa', '\xd'] ++ ['\x20' .. '\xff']

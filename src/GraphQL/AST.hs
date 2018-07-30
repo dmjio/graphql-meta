@@ -156,7 +156,7 @@ data Value
   = ValueVariable Variable
   | ValueInt Int
   | ValueFloat Double
-  | ValueString Text
+  | ValueString StringValue
   | ValueBoolean Bool
   | ValueNull
   | ValueEnum EnumValue
@@ -302,8 +302,8 @@ instance NFData OperationTypeDefinition
 
 -- | A GraphQL 'Description'
 -- http://facebook.github.io/graphql/draft/#Description
-newtype Description = Description Text
-  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup, NFData)
+newtype Description = Description StringValue
+  deriving (Show, Eq, Generic, Data, Typeable, NFData)
 
 -- | A GraphQL 'TypeDefinition'
 -- http://facebook.github.io/graphql/draft/#TypeDefinition

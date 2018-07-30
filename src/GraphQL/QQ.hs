@@ -135,7 +135,7 @@ parseGQLQuery
         Just True -> Just [| toExpr $(pure $ VarE (mkName $ T.unpack k)) |]
         _ -> Just [| ValueVariable (Variable (Name $(litE $ stringL $ T.unpack k))) |]
 
-    subVars scopeTable (ValueString k) =
+    subVars scopeTable (ValueString (StringValue _ k)) =
       case M.lookup k scopeTable of
         Just True -> Just [| toExpr $(pure $ VarE (mkName $ T.unpack k)) |]
         _ -> Just [| toExpr ($(litE $ stringL $ T.unpack k) :: String) |]
@@ -261,7 +261,7 @@ instance ToExpr Double where
   toExpr = ValueFloat
 
 instance ToExpr Text where
-  toExpr = ValueString
+  toExpr = ValueString . StringValue SingleLine
 
 instance ToExpr a => ToExpr [a] where
   toExpr = ValueList . map toExpr
@@ -282,7 +282,7 @@ instance (ToExpr b, ToExpr a) => ToExpr (Either a b) where
   toExpr (Right x) = toExpr x
 
 instance {-# overlaps #-} ToExpr String where
-  toExpr = ValueString . T.pack
+  toExpr = ValueString . StringValue SingleLine . T.pack
 
 getVariables
   :: ExecutableDefinition

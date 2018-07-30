@@ -32,7 +32,7 @@ lexerSpec = do
   commentSpec
   multiStringSpec
   multiMultiStringSpec
---  stringSpec
+  stringSpec
 
 toBs :: Show a => a -> ByteString
 toBs = T.encodeUtf8 . T.pack . show
@@ -187,7 +187,7 @@ multiStringSpec =
         ,TokenPunctuator '('
         ,TokenName "id"
         ,TokenPunctuator ':'
-        ,TokenString "hey\n"
+        ,TokenString (StringValue BlockString "hey\n")
         ,TokenPunctuator ')'
         ,TokenPunctuator '{'
         ,TokenName "floorCount"
@@ -201,13 +201,11 @@ stringSpec =
     it "should lex unicode in a string" $
       getTokens "\"\\ua67D\""
         `shouldBe`
-        [TokenString "\"\\ua67D\""
-        ]
+        [TokenString (StringValue SingleLine "\\ua67D")]
     it "should lex multiple unicode in a string" $
       getTokens "\"\\ua67D\\ua68D\""
         `shouldBe`
-        [TokenString "\"\\ua67D\\ua68D\""]
-
+        [TokenString (StringValue SingleLine "\\ua67D\\ua68D")]
 
 multiMultiStringSpec :: Spec
 multiMultiStringSpec =
@@ -222,10 +220,10 @@ multiMultiStringSpec =
         ,TokenPunctuator '('
         ,TokenName "id"
         ,TokenPunctuator ':'
-        ,TokenString "hey\n"
+        ,TokenString (StringValue BlockString "hey\n")
         ,TokenName "hah"
         ,TokenPunctuator ':'
-        ,TokenString "foo"
+        ,TokenString (StringValue BlockString "foo")
         ,TokenPunctuator ')'
         ,TokenPunctuator '{'
         ,TokenName "floorCount"

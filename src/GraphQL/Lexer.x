@@ -20,13 +20,14 @@ module GraphQL.Lexer
   , OperationType (..)
   , ExecutableDirectiveLocation (..)
   , TypeSystemDirectiveLocation (..)
+  , StringValue (..)
+  , StringType (..)
   ) where
 --------------------------------------------------------------------------------
 import           Data.ByteString (ByteString)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Control.Monad.State
-import           Debug.Trace
 --------------------------------------------------------------------------------
 import           GraphQL.LexerUtils
 --------------------------------------------------------------------------------
@@ -134,13 +135,13 @@ tokens :-
   @name { token (TokenName . T.decodeUtf8) }
   }
  <blockstring> {
-  $sourceCharacter # [\"\"\"] # [\\\"\"\"] { appendMode }
-  \\\"\"\" { appendMode }
+  [.\n] { appendModeBlock }
+  \\\"\"\" { endMode }
   \"\"\" { endMode }
  }
  <string> {
-   \ @escapedCharacter { processEscapedCharacter }
-   \u @escapedUnicode { processEscapedUnicode }
+   \\ \ @escapedCharacter { processEscapedCharacter }
+   \\ u @escapedUnicode { processEscapedUnicode }
    $sourceCharacter # [\"\n\\] { appendMode }
    \" { endMode }
  }
@@ -171,8 +172,8 @@ alexScanTokens input = flip evalState (LexerState (mkInput input) InNormal mempt
           case r of
             Nothing -> go
             Just t -> do
-	      ts <- go
-	      pure (t:ts)
+              ts <- go
+              pure (t:ts)
 
 stateToInt :: LexerMode -> Int
 stateToInt InNormal{}      = 0

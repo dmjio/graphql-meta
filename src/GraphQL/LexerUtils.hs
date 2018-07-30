@@ -1,7 +1,9 @@
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts   #-}
+{-# LANGUAGE DeriveAnyClass     #-}
+{-# LANGUAGE ViewPatterns       #-}
+{-# LANGUAGE RecordWildCards    #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE DeriveGeneric      #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 --------------------------------------------------------------------------------
 -- |
@@ -72,7 +74,7 @@ data Token
   = TokenInt Int
   | TokenFloat Double
   | TokenName Text
-  | TokenString Text
+  | TokenString StringValue
   | TokenReserved Text
   | TokenPunctuator Char
   | TokenMultiPunctuator Text
@@ -87,14 +89,12 @@ data Token
 data Error
   = ConversionError Text Text
   | LexerError Text
-  | NoMatch Char
+  | NoMatch Text
   | UntermBlockString
   | UntermString
   deriving (Show, Eq, Data, Read, Generic, Typeable)
 
 instance NFData Error
-
---(AlexInput '\n' str 0)
 
 data AlexInput = AlexInput
   { alexChar    :: {-# UNPACK #-} !Char
@@ -111,6 +111,12 @@ data LexerState
 
 type Action = Int -> AlexInput -> State LexerState (Maybe Token)
 
+data StringValue
+  = StringValue StringType T.Text
+  deriving (Show, Eq, Data, Read, Generic, Typeable)
+
+instance NFData StringValue
+
 token :: (ByteString -> Token) -> Action
 token f inputLength _ = do
   LexerState {..} <- get
@@ -119,6 +125,11 @@ token f inputLength _ = do
 token_ :: Token -> Action
 token_ = token . const
 
+data StringType
+  = SingleLine
+  | BlockString
+  deriving (Show, Eq, Data, Read, Generic, Typeable, NFData)
+
 data LexerMode
   = InNormal
   | InBlockString
@@ -126,17 +137,21 @@ data LexerMode
   deriving (Show, Eq)
 
 processEscapedCharacter :: Action
-processEscapedCharacter = appendMode -- token (TokenString . T.decodeUtf8)
+processEscapedCharacter = appendMode
 
 processEscapedUnicode :: Action
-processEscapedUnicode = appendMode -- token (TokenString . T.decodeUtf8)
+processEscapedUnicode = appendMode
 
 appendMode :: Action
-appendMode _ (B.uncons . alexStr -> Just (c, _)) = do
+appendMode len bs = do
   s@LexerState {..} <- get
-  put s { stringBuffer = B.cons c stringBuffer }
+  put s { stringBuffer = stringBuffer <> B.take len (alexStr bs) }
   pure Nothing
-appendMode _ _ =
+
+appendModeBlock :: Action
+appendModeBlock len bs = do
+  s@LexerState {..} <- get
+  put s { stringBuffer = stringBuffer <> B.take len (alexStr bs) }
   pure Nothing
 
 endMode :: Action
@@ -144,13 +159,13 @@ endMode _ _ = do
   mode <- gets lexerMode
   case mode of
     InNormal -> pure Nothing
-    InBlockString -> apply
-    InString -> apply
+    InBlockString -> apply BlockString
+    InString -> apply SingleLine
   where
-    apply = do
+    apply stringType = do
       buf <- gets stringBuffer
       modify $ \s -> s { lexerMode = InNormal, stringBuffer = mempty }
-      pure $ Just $ TokenString $ T.reverse (T.decodeUtf8 buf)
+      pure $ Just $ TokenString $ StringValue stringType (T.decodeUtf8 buf)
 
 eofAction :: State LexerState [Token]
 eofAction = do
@@ -162,7 +177,7 @@ eofAction = do
 
 errorAction :: AlexInput -> State LexerState [Token]
 errorAction AlexInput {..} =
-  pure [TokenError (NoMatch (T.head $ T.decodeUtf8 alexStr))]
+  pure [TokenError (NoMatch (T.decodeUtf8 alexStr))]
 
 startBlockString :: Action
 startBlockString _ _ =

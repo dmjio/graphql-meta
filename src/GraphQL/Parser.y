@@ -472,8 +472,7 @@ parseDocument :: ByteString -> Either String Document
 parseDocument = parseDoc . getTokens
 
 parseError :: [Token] -> Either String a
-parseError tks = Left (show tks)
-    {-
+parseError tks =
   Left $ "Parse error: " <> T.unpack (explainToken (head tks))
     where
       explainToken (TokenError err) = explainError err
@@ -483,10 +482,9 @@ parseError tks = Left (show tks)
       explainError (LexerError errMsg)
         = errMsg
       explainError (NoMatch c)
-        = "Couldn't match on " <> T.singleton c
+        = "Couldn't match on " <> c
       explainError UntermBlockString
         = "Unterminated block string"
       explainError UntermString
         = "Unterminated string"
-
 }

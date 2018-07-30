@@ -15,7 +15,7 @@ module Main (main) where
 import           GHC.Generics
 import           Data.Proxy
 --------------------------------------------------------------------------------
-import           GraphQL.QQ
+
 import           GraphQL.Generic
 import           GraphQL.AST
 import           GraphQL.Pretty
@@ -54,14 +54,14 @@ multipleSubstitution
   -> String
   -> String
   -> ExecutableDefinition
-multipleSubstitution a b c d
+multipleSubstitution
   = undefined
 
 -- | QuasiQuotation single substitution example
 singleSubstitution
   :: String
   -> ExecutableDefinition
-singleSubstitution hi
+singleSubstitution
   = undefined
 
 -- | Example of using GHC.Generics to create a Schema from a product type
