@@ -272,7 +272,7 @@ printInputValueDefinition
     ]
 
 printDescription :: Description -> Doc ann
-printDescription (Description s) = pretty s
+printDescription (Description s) = pretty '"' <> pretty s <> pretty '"'
 
 printTypeDefinition :: TypeDefinition -> Doc a
 printTypeDefinition (DefinitionScalarType scalarTypeDef) =
@@ -559,7 +559,7 @@ printArg (Argument (Name name) value) =
   pretty name <> colon <> printValue value
 
 printValue :: Value -> Doc ann
-printValue (ValueString s)      = pretty s
+printValue (ValueString s)      = pretty '"' <> pretty s <> pretty '"'
 printValue (ValueBoolean True)  = pretty ("true" :: String)
 printValue (ValueBoolean False) = pretty ("false" :: String)
 printValue ValueNull            = pretty ("null" :: String)

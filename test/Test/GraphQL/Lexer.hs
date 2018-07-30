@@ -32,7 +32,7 @@ lexerSpec = do
   commentSpec
   multiStringSpec
   multiMultiStringSpec
-  stringSpec
+--  stringSpec
 
 toBs :: Show a => a -> ByteString
 toBs = T.encodeUtf8 . T.pack . show
@@ -206,8 +206,7 @@ stringSpec =
     it "should lex multiple unicode in a string" $
       getTokens "\"\\ua67D\\ua68D\""
         `shouldBe`
-        [TokenString "\"\\ua67D\\ua68D\""
-        ]
+        [TokenString "\"\\ua67D\\ua68D\""]
 
 
 multiMultiStringSpec :: Spec
