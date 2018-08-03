@@ -173,6 +173,16 @@ parserSpec = do
                  ]
       gDef "{ dog, cat }" `shouldBe` Right
         (DefinitionExecutable (DefinitionOperation oDef))
+
+  describe "Should parse type as a selection field name" $
+    it "Should parse type as a selection field name" $ do
+      let oDef = AnonymousQuery sels
+          sels = [ SelectionField (Field Nothing (Name "type") [] [] [])
+                 , SelectionField (Field Nothing (Name "building") [] [] [])
+                 ]
+      gDef "{ type, building }" `shouldBe` Right
+        (DefinitionExecutable (DefinitionOperation oDef))
+
   describe "Should fail to parse a Definition purely" $
     it "Should fail to parse" $
       gDef "{{building {floorCount}}" `shouldSatisfy` isLeft
@@ -193,7 +203,7 @@ parserSpec = do
            $ ScalarTypeExtension (Name "Foo")
            [ Directive (Name "lol") [Argument (Name "hey") (ValueInt 234)]])
 
-  describe "Should parse Type Synstem Definitions" $
+  describe "Should parse Type System Definitions" $
     it "Should parse Schema Definitions" $
       gDef "schema { query : Query, mutation: Mutation }" `shouldBe` Right
         (DefinitionTypeSystem
@@ -202,4 +212,3 @@ parserSpec = do
            [ OperationTypeDefinition Query (NamedType (Name "Query"))
            , OperationTypeDefinition Mutation (NamedType (Name "Mutation"))
            ])
-

@@ -342,8 +342,8 @@ MaybeTypeCondition :: { Maybe TypeCondition }
   | TypeCondition { Just $1 }
 
 Field :: { Field }
-  : Alias Name Arguments MaybeDirectives SelectionSet { Field (Just $1) $2 $3 $4 $5 }
-  | Name Arguments MaybeDirectives SelectionSet { Field Nothing $1 $2 $3 $4 }
+  : Alias Name2 Arguments MaybeDirectives SelectionSet { Field (Just $1) $2 $3 $4 $5 }
+  | Name2 Arguments MaybeDirectives SelectionSet { Field Nothing $1 $2 $3 $4 }
 
 VariableDefinition :: { VariableDefinition }
   : Variable ':' Type DefaultValue { VariableDefinition $1 $3 (Just $4) }
@@ -382,6 +382,10 @@ ValueObjects :: { [ObjectField] }
 
 ObjectField :: { ObjectField }
   : Name ':' Value { ObjectField $1 $3 }
+
+Name2 :: { Name }
+  : type { Name "type" }
+  | name { Name $1 }
 
 Name :: { Name }
   : name { Name $1 }
