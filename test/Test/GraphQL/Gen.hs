@@ -123,7 +123,7 @@ genTypeSystemDefinition =
 
 genDocument :: Gen Document
 genDocument = Document <$> do
-  choose (1,1) >>= flip replicateM genDefinition
+  choose (0,2) >>= flip replicateM genDefinition
 
 genSchemaDefinition :: Gen SchemaDefinition
 genSchemaDefinition =

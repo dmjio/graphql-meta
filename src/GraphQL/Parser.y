@@ -83,10 +83,12 @@ import GraphQL.AST
 %%
 
 Document :: { Document }
-  : Definitions { Document $1 }
+  : { Document [] }
+  | Definitions { Document (reverse $1) }
 
 Definitions :: { [Definition] }
   : Definition { [$1] }
+  | Definitions Definition { $2 : $1 }
 
 Definition :: { Definition }
 Definition
@@ -215,7 +217,8 @@ InputObjectTypeExtension :: { InputObjectTypeExtension }
   { InputObjectTypeExtension $3 $4 $5 }
 
 Fields :: { [FieldDefinition] }
-  : Fields FieldDefinition { $2 : $1 }
+  : FieldDefinition { [$1] }
+  | Fields FieldDefinition { $2 : $1 }
 
 FieldDefinition :: { FieldDefinition }
   : MaybeDescription Name MaybeArgumentsDefinition ':' Type MaybeDirectives
@@ -258,7 +261,8 @@ MaybeFieldsDefinition :: { FieldsDefinition }
   | FieldsDefinition { FieldsDefinition $1 }
 
 MaybeDirectives :: { Directives }
-  : Directives { reverse $1 }
+  : { [] }
+  | Directives { reverse $1 }
 
 MaybeInputFieldsDefinition :: { InputFieldsDefinition }
   : { InputFieldsDefinition [] }
@@ -307,12 +311,11 @@ VariableDefinitionList :: { VariableDefinitions }
   | VariableDefinitionList VariableDefinition { $2 : $1 }
 
 Directives :: { [Directive] }
-  : { [] }
+  : Directive { [$1] }
   | Directives Directive { $2 : $1 }
 
 SelectionSet :: { SelectionSet }
-  : { [] }
-  | '{' SelectionSets '}' { reverse $2 }
+  : '{' SelectionSets '}' { reverse $2 }
 
 SelectionSets :: { SelectionSet }
   : { [] }
@@ -342,8 +345,12 @@ MaybeTypeCondition :: { Maybe TypeCondition }
   | TypeCondition { Just $1 }
 
 Field :: { Field }
-  : Alias Name2 Arguments MaybeDirectives SelectionSet { Field (Just $1) $2 $3 $4 $5 }
-  | Name2 Arguments MaybeDirectives SelectionSet { Field Nothing $1 $2 $3 $4 }
+  : Alias Name2 Arguments MaybeDirectives MaybeSelectionSet { Field (Just $1) $2 $3 $4 $5 }
+  | Name2 Arguments MaybeDirectives MaybeSelectionSet { Field Nothing $1 $2 $3 $4 }
+
+MaybeSelectionSet :: { SelectionSet }
+  : { [] }
+  | SelectionSet { $1 }
 
 VariableDefinition :: { VariableDefinition }
   : Variable ':' Type DefaultValue { VariableDefinition $1 $3 (Just $4) }
@@ -439,7 +446,8 @@ parseDocument :: ByteString -> Either String Document
 parseDocument = parseDoc . getTokens
 
 parseError :: [Token] -> Either String a
-parseError tks =
+parseError tks = Left (show tks)
+    {-
   Left $ "Parse error: " <> T.unpack (explainToken (head tks))
     where
       explainToken (TokenError err) = explainError err
@@ -448,5 +456,5 @@ parseError tks =
         = errMsg <> " at " <> s
       explainError (LexerError errMsg)
         = errMsg
-
+     -}
 }

@@ -396,7 +396,6 @@ printOperationType Subscription = pretty ("subscription" :: String)
 printSelectionSet
   :: [Selection]
   -> Doc ann
-printSelectionSet [] = mempty
 printSelectionSet selSet =
   mconcat [
      space
@@ -406,6 +405,21 @@ printSelectionSet selSet =
      , rbrace
    ]
  ]
+
+printMaybeSelectionSet
+  :: [Selection]
+  -> Doc ann
+printMaybeSelectionSet [] = mempty
+printMaybeSelectionSet selSet =
+  mconcat [
+     space
+   , nest 2 $ vsep [
+       lbrace
+     , vsep (printSel `fmap` selSet)
+     , rbrace
+   ]
+ ]
+
 
 printSel
   :: Selection
@@ -452,7 +466,7 @@ printField (Field maybeAlias (Name name) args dirs sels)
     , pretty name
     , printArgs args
     , printDirectives dirs
-    , printSelectionSet sels
+    , printMaybeSelectionSet sels
     ]
 
 printArgs :: Arguments -> Doc ann
