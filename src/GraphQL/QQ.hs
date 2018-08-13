@@ -133,7 +133,7 @@ parseGQLQuery
     subVars scopeTable (ValueVariable (Variable (Name k))) =
       case M.lookup k scopeTable of
         Just True -> Just [| toExpr $(pure $ VarE (mkName $ T.unpack k)) |]
-        _ -> Just [| toExpr ($(litE $ stringL $ T.unpack k) :: String) |]
+        _ -> Just [| ValueVariable (Variable (Name ($(litE $ stringL $ T.unpack k)))) |]
 
     subVars scopeTable (ValueString k) =
       case M.lookup k scopeTable of
