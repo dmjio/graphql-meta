@@ -19,10 +19,7 @@ import Data.Typeable   (Typeable)
 import Data.Data       (Data)
 import Data.Text       (Text)
 import Control.DeepSeq (NFData)
-#if MIN_VERSION_base(4,10,0)
 import Data.Semigroup  (Semigroup)
-#else
-#endif
 --------------------------------------------------------------------------------
 import GraphQL.Lexer
 --------------------------------------------------------------------------------
