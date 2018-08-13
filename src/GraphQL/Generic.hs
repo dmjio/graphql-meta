@@ -29,6 +29,7 @@ import           GHC.Generics
 import           GHC.TypeLits
 import           Data.Proxy
 import           Data.Text    (Text, pack)
+import           Data.Monoid  ((<>))
 --------------------------------------------------------------------------------
 import           GraphQL.AST
 --------------------------------------------------------------------------------
