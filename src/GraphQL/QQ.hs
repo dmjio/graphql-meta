@@ -28,6 +28,7 @@ import           Data.Data
 import qualified Data.Map                   as M
 import           Data.Map                   (Map)
 import           Data.Maybe
+import           Data.Monoid                ((<>))
 import           Data.Set                   (Set)
 import qualified Data.Set                   as S
 import qualified Data.Text                  as T
