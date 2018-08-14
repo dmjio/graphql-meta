@@ -30,7 +30,8 @@ library
     deepseq,
     text,
     prettyprinter,
-    template-haskell
+    template-haskell,
+    hashable
   build-tools:
     alex,
     happy
