@@ -18,6 +18,7 @@ module GraphQL.Parser
   , gDef
   , exeDef
   , defs
+  , objType
   , parseDocument
   ) where
 --------------------------------------------------------------------------------
@@ -34,6 +35,7 @@ import GraphQL.AST
 %name parseDefs Definitions
 %name parseValue Value
 %name parseDef Definition
+%name parseObjType ObjectTypeDefinition
 %name parseSelSet SelectionSet
 %name parseOpDef OperationDefinition
 %name parseExeDef ExecutableDefinition
@@ -247,10 +249,11 @@ MaybeArgumentsDefinition :: { ArgumentsDefinition }
   | ArgumentsDefinition { ArgumentsDefinition $1 }
 
 ArgumentsDefinition :: { [InputValueDefinition] }
-  : '(' InputValuesDefinition ')' { $2 }
+  : '(' InputValuesDefinition ')' { (reverse $2) }
 
 InputValuesDefinition :: { [InputValueDefinition] }
-  : InputValuesDefinition InputValueDefinition { $2 : $1 }
+  : InputValueDefinition { [$1] }
+  | InputValuesDefinition InputValueDefinition { $2 : $1 }
 
 InputValueDefinition :: { InputValueDefinition }
   : MaybeDescription Name ':' Type MaybeDefaultValue MaybeDirectives
@@ -258,7 +261,7 @@ InputValueDefinition :: { InputValueDefinition }
 
 MaybeFieldsDefinition :: { FieldsDefinition }
   : { FieldsDefinition [] }
-  | FieldsDefinition { FieldsDefinition $1 }
+  | FieldsDefinition { FieldsDefinition (reverse $1) }
 
 MaybeDirectives :: { Directives }
   : { [] }
@@ -277,7 +280,7 @@ MaybeUnionMemberTypes :: { UnionMemberTypes }
 
 MaybeImplementsInterfaces :: { ImplementsInterfaces }
   : { ImplementsInterfaces [] }
-  | ImplementsInterfaces { ImplementsInterfaces $1 }
+  | ImplementsInterfaces { ImplementsInterfaces (reverse $1) }
 
 ImplementsInterfaces :: { [NamedType] }
   : implements '&' NamedType { [$3] }
@@ -428,6 +431,10 @@ selSet = parseSelSet . getTokens
 -- | Parses a GraphQL 'OperationDefinition'
 opDef :: ByteString -> Either String OperationDefinition
 opDef = parseOpDef . getTokens
+
+-- | Parses a GraphQL 'OperationDefinition'
+objType :: ByteString -> Either String ObjectTypeDefinition
+objType = parseObjType . getTokens
 
 -- | Parses a GraphQL '[Definition]'
 defs :: ByteString -> Either String [Definition]

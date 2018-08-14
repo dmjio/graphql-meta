@@ -144,7 +144,7 @@ genOperationTypeDefinition =
 genTypeDefinition :: Gen TypeDefinition
 genTypeDefinition = oneof
   [ DefinitionScalarType <$> genScalarTypeDefinition
-  -- , DefinitionObjectType <$> genObjectTypeDefinition
+  , DefinitionObjectType <$> genObjectTypeDefinition
   -- , DefinitionInterfaceType <$> genInterfaceTypeDefinition
   -- , DefinitionUnionType <$> genUnionTypeDefinition
   -- , DefinitionEnumType <$> genEnumTypeDefinition
@@ -229,9 +229,10 @@ genImplementsInterfaces =
   ImplementsInterfaces <$> do
     choose (0,2) >>= flip replicateM genNamedType
 
+-- | Can't be empty, or ambiguities occur w/ anonymous queries
 genFieldsDefinition :: Gen FieldsDefinition
 genFieldsDefinition = FieldsDefinition <$> do
-  choose (0,2) >>= flip replicateM genFieldDefinition
+  choose (1,2) >>= flip replicateM genFieldDefinition
 
 genFieldDefinition :: Gen FieldDefinition
 genFieldDefinition =

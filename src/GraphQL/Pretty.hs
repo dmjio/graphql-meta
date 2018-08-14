@@ -259,12 +259,47 @@ printTypeDefinition (DefinitionInputObjectType inputObjectTypeDefinition) =
 
 printObjectTypeDefinition :: ObjectTypeDefinition -> Doc ann
 printObjectTypeDefinition
-  (ObjectTypeDefinition maybeDescription (Name name) _ dirs _)
-  = hsep [
-      maybe mempty printDescription maybeDescription
+  (ObjectTypeDefinition maybeDescription (Name name) implementsInterfaces dirs fieldDefinitions)
+  = mconcat [
+      maybe mempty (\x -> printDescription x <> space) maybeDescription
+    , pretty ("type" :: String)
+    , space
     , pretty name
+    , space
+    , printImplementsInterfaces implementsInterfaces
     , printDirectives dirs
+    , printFieldsDefinitions fieldDefinitions
     ]
+
+printImplementsInterfaces
+  :: ImplementsInterfaces
+  -> Doc a
+printImplementsInterfaces
+  (ImplementsInterfaces []) = mempty
+printImplementsInterfaces
+  (ImplementsInterfaces namedTypes)
+  = pretty ("implements" :: String) <> space <>
+  mconcat [ pretty '&' <> space <> pretty name <> space
+          | (NamedType (Name name)) <- namedTypes
+          ]
+
+printFieldsDefinitions :: FieldsDefinition -> Doc a
+printFieldsDefinitions (FieldsDefinition []) = mempty
+printFieldsDefinitions (FieldsDefinition fields) =
+  pretty '{' <+> hsep (go <$> fields) <+> pretty '}'
+    where
+      go (FieldDefinition maybeDescription (Name name) argsDefs type' directives)
+        = mconcat [ maybe mempty (\x -> printDescription x <> space) maybeDescription
+                  , pretty name
+                  , space
+                  , printArgumentDefinitions argsDefs
+                  , space
+                  , pretty ':'
+                  , space
+                  , printType type'
+                  , space
+                  , printDirectives directives
+                  ]
 
 printInterfaceTypeDefinition :: InterfaceTypeDefinition -> Doc a
 printInterfaceTypeDefinition
