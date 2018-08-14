@@ -60,11 +60,13 @@ printTypeExtension (ExtensionInputObjectType inputObjectTypeExtension)
 
 printInputObjectTypeExtension :: InputObjectTypeExtension -> Doc ann
 printInputObjectTypeExtension
-  (InputObjectTypeExtension (Name name) dirs (InputFieldsDefinition inputFieldsDefinition))
-    = mconcat [ pretty name
-              , printDirectives dirs
-              , foldMap printInputValueDefinition inputFieldsDefinition
-              ]
+  (InputObjectTypeExtension (Name name) dirs inputFieldsDefinition)
+    = hsep [ pretty ("extend" :: String)
+           , pretty ("input" :: String)
+           , pretty name
+           , printDirectives dirs
+           , printInputFieldsDefinition inputFieldsDefinition
+           ]
 
 printInputFieldsDefinition :: InputFieldsDefinition -> Doc ann
 printInputFieldsDefinition (InputFieldsDefinition []) = mempty
@@ -87,10 +89,12 @@ printInputFieldDefinition
 
 printEnumTypeExtension :: EnumTypeExtension -> Doc ann
 printEnumTypeExtension (EnumTypeExtension (Name name) dirs enumValuesDefinition)
-  = mconcat [ pretty name
-            , printDirectives dirs
-            , printEnumValuesDefinition enumValuesDefinition
-            ]
+  = hsep [ pretty ("extend" :: String)
+         , pretty ("enum" :: String)
+         , pretty name
+         , printDirectives dirs
+         , printEnumValuesDefinition enumValuesDefinition
+         ]
 
 printEnumValuesDefinition :: EnumValuesDefinition -> Doc ann
 printEnumValuesDefinition (EnumValuesDefinition []) = mempty
@@ -111,9 +115,12 @@ printEnumValue (EnumValue (Name n)) = pretty n
 
 printUnionTypeExtension :: UnionTypeExtension -> Doc ann
 printUnionTypeExtension (UnionTypeExtension (Name name) directives unionMemberTypes)
-  = mconcat [ pretty name, printDirectives directives
-            , printUnionMemberTypes unionMemberTypes
-            ]
+  = hsep [ pretty ("extend" :: String)
+         , pretty ("union" :: String)
+         , pretty name
+         , printDirectives directives
+         , printUnionMemberTypes unionMemberTypes
+         ]
 
 printUnionMemberTypes :: UnionMemberTypes -> Doc a
 printUnionMemberTypes (UnionMemberTypes []) = mempty
@@ -125,21 +132,27 @@ printNamedType (NamedType (Name n)) = pretty '|' <+> pretty n
 
 printScalarTypeExtension :: ScalarTypeExtension -> Doc ann
 printScalarTypeExtension (ScalarTypeExtension (Name name) directives)
-  = mconcat [ pretty name
+  = mconcat [ pretty ("extend" :: String)
+            , space
+            , pretty ("scalar" :: String)
+            , space
+            , pretty name
+            , space
             , printDirectives directives
             ]
 
 printInterfaceTypeExtension :: InterfaceTypeExtension -> Doc ann
 printInterfaceTypeExtension
   (InterfaceTypeExtension (Name name) directives fields)
-  = mconcat [ pretty name
+  = mconcat [ pretty ("extend" :: String)
+            , space
+            , pretty ("interface" :: String)
+            , space
+            , pretty name
+            , space
             , printDirectives directives
-            , printFieldsDefinition fields
+            , printFieldsDefinitions fields
             ]
-
-printFieldsDefinition :: FieldsDefinition -> Doc ann
-printFieldsDefinition (FieldsDefinition fields) =
-  foldMap printFieldDefinition fields
 
 printFieldDefinition :: FieldDefinition -> Doc ann
 printFieldDefinition
@@ -160,22 +173,27 @@ printObjectTypeExtension :: ObjectTypeExtension -> Doc ann
 printObjectTypeExtension
   (ObjectTypeExtension
      (Name name)
-     (ImplementsInterfaces is)
+     implementsInterfaces
      directives
-     (FieldsDefinition fields)
+     fieldsDefinitions
   )
   = hsep [
-    pretty name
-  , foldMap printNamedType is
-  , foldMap printFieldDefinition fields
+    pretty ("extend" :: String)
+  , pretty ("type" :: String)
+  , pretty name
+  , printImplementsInterfaces implementsInterfaces
   , printDirectives directives
+  , printFieldsDefinitions fieldsDefinitions
   ]
 
 printSchemaExtension :: SchemaExtension -> Doc a
 printSchemaExtension (SchemaExtension dirs operationTypeDefs) =
-  mconcat [ printDirectives dirs
-          , vsep (printOperationTypeDefinitions operationTypeDefs)
-          ]
+  pretty ("extend" :: String) <+> pretty ("schema" :: String) <+>
+    mconcat [ printDirectives dirs
+            , pretty '{' <+>
+                vsep (printOperationTypeDefinitions operationTypeDefs)
+                  <+> pretty '}'
+            ]
 
 printTypeSystemDefinition
   :: TypeSystemDefinition
@@ -210,13 +228,18 @@ printOperationTypeDefinitions opDefs =
 printDirectiveDefinition :: DirectiveDefinition -> Doc ann
 printDirectiveDefinition
   (DirectiveDefinition maybeDescription (Name name) argsDefs dirLocs)
-    = hsep
-      [ maybe mempty printDescription maybeDescription
+    = mconcat
+      [ maybe mempty (\x -> printDescription x <> space) maybeDescription
       , pretty ("directive" :: String)
+      , space
       , pretty '@'
+      , space
       , pretty name
+      , space
       , printArgumentDefinitions argsDefs
+      , space
       , pretty ("on" :: String)
+      , space
       , printDirectiveLocations dirLocs
       ]
 
@@ -287,7 +310,7 @@ printImplementsInterfaces
 printImplementsInterfaces
   (ImplementsInterfaces namedTypes)
   = pretty ("implements" :: String) <> space <>
-  mconcat [ pretty '&' <> space <> pretty name <> space
+  mconcat [ pretty '&' <+> pretty name <> space
           | (NamedType (Name name)) <- namedTypes
           ]
 
@@ -385,9 +408,9 @@ printDirectiveLocations :: DirectiveLocations -> Doc a
 printDirectiveLocations xs = hsep (printDirectiveLocation <$> xs)
   where
     printDirectiveLocation (LocationExecutableDirective l)
-      = pretty (show l)
+      = pretty '|' <+> pretty (show l)
     printDirectiveLocation (LocationTypeSystemDirective l)
-      = pretty (show l)
+      = pretty '|' <+> pretty (show l)
 
 -- | Pretty prints an 'ExecutableDefinition'
 printExecutableDefinition

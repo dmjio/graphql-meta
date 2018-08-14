@@ -118,7 +118,7 @@ genTypeSystemDefinition :: Gen TypeSystemDefinition
 genTypeSystemDefinition =
   oneof [ DefinitionSchema <$> genSchemaDefinition
         , DefinitionType <$> genTypeDefinition
---      , DefinitionDirective <$> genDirectiveDefinition
+        , DefinitionDirective <$> genDirectiveDefinition
         ]
 
 genDocument :: Gen Document
@@ -330,7 +330,7 @@ genDefinition :: Gen Definition
 genDefinition =
   oneof [ DefinitionExecutable <$> genExecutableDefinition
         , DefinitionTypeSystem <$> genTypeSystemDefinition
---      , ExtensionTypeSystem <$> genTypeSystemExtension
+        , ExtensionTypeSystem <$> genTypeSystemExtension
         ]
 
 genTypeSystemExtension :: Gen TypeSystemExtension
@@ -340,7 +340,9 @@ genTypeSystemExtension =
         ]
 
 genSchemaExtension :: Gen SchemaExtension
-genSchemaExtension = undefined
+genSchemaExtension =
+  SchemaExtension <$> genDirectives
+                  <*> genOperationTypeDefinitions
 
 genTypeExtension :: Gen TypeExtension
 genTypeExtension = oneof

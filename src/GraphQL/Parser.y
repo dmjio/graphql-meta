@@ -234,7 +234,7 @@ OperationDefinition :: { OperationDefinition }
 
 DirectiveDefinition :: { DirectiveDefinition }
   : MaybeDescription directive '@' Name MaybeArgumentsDefinition on DirectiveLocations
-   { DirectiveDefinition $1 $4 $5 $7 }
+  { DirectiveDefinition $1 $4 $5 (reverse $7) }
 
 DirectiveLocations :: { DirectiveLocations }
   : '|' DirectiveLocation { [$2] }
