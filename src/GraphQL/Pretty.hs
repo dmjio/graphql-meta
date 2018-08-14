@@ -66,6 +66,11 @@ printInputObjectTypeExtension
               , foldMap printInputValueDefinition inputFieldsDefinition
               ]
 
+printInputFieldsDefinition :: InputFieldsDefinition -> Doc ann
+printInputFieldsDefinition (InputFieldsDefinition []) = mempty
+printInputFieldsDefinition (InputFieldsDefinition xs)
+  = pretty '{' <+> hsep (printInputValueDefinition <$> xs) <+> pretty '}'
+
 printInputFieldDefinition :: InputValueDefinition -> Doc ann
 printInputFieldDefinition
   (InputValueDefinition maybeDescription
@@ -88,13 +93,15 @@ printEnumTypeExtension (EnumTypeExtension (Name name) dirs enumValuesDefinition)
             ]
 
 printEnumValuesDefinition :: EnumValuesDefinition -> Doc ann
+printEnumValuesDefinition (EnumValuesDefinition []) = mempty
 printEnumValuesDefinition (EnumValuesDefinition enumValues) =
-  foldMap printEnumValueDefinition enumValues
+  pretty '{' <+> hsep (printEnumValueDefinition <$> enumValues) <+> pretty '}'
 
 printEnumValueDefinition :: EnumValueDefinition -> Doc ann
 printEnumValueDefinition (EnumValueDefinition maybeDescription enumValue directives)
-  = mconcat [ maybe mempty printDescription maybeDescription
+  = mconcat [ maybe mempty (\x -> printDescription x <> space) maybeDescription
             , printEnumValue enumValue
+            , space
             , printDirectives directives
             ]
 
@@ -109,11 +116,12 @@ printUnionTypeExtension (UnionTypeExtension (Name name) directives unionMemberTy
             ]
 
 printUnionMemberTypes :: UnionMemberTypes -> Doc a
+printUnionMemberTypes (UnionMemberTypes []) = mempty
 printUnionMemberTypes (UnionMemberTypes namedTypes) =
-  foldMap printNamedType namedTypes
+  pretty '=' <+> hsep (printNamedType <$> namedTypes)
 
 printNamedType :: NamedType -> Doc a
-printNamedType (NamedType (Name n)) = pretty n
+printNamedType (NamedType (Name n)) = pretty '|' <+> pretty n
 
 printScalarTypeExtension :: ScalarTypeExtension -> Doc ann
 printScalarTypeExtension (ScalarTypeExtension (Name name) directives)
@@ -309,8 +317,9 @@ printInterfaceTypeDefinition
     , pretty ("interface" :: String)
     , space
     , pretty name
+    , space
     , printDirectives directives
-    , printFieldsDefinition fields
+    , printFieldsDefinitions fields
     ]
 
 printUnionTypeDefinition :: UnionTypeDefinition -> Doc a
@@ -318,11 +327,15 @@ printUnionTypeDefinition
   (UnionTypeDefinition maybeDescription
                         (Name name)
                         directives
-                        _)
+                        unionMemberTypes)
   = mconcat [
-      maybe mempty printDescription maybeDescription
+      maybe mempty (\x -> printDescription x <> space) maybeDescription
+    , pretty ("union" :: String)
+    , space
     , pretty name
+    , space
     , printDirectives directives
+    , printUnionMemberTypes unionMemberTypes
     ]
 
 printEnumTypeDefinition :: EnumTypeDefinition -> Doc a
@@ -330,11 +343,15 @@ printEnumTypeDefinition
   (EnumTypeDefinition maybeDescription
                        (Name name)
                        directives
-                       _)
+                       enumValuesDefinition)
   = mconcat [
-      maybe mempty printDescription maybeDescription
+      maybe mempty (\x -> printDescription x <> space) maybeDescription
+    , pretty ("enum" :: String)
+    , space
     , pretty name
+    , space
     , printDirectives directives
+    , printEnumValuesDefinition enumValuesDefinition
     ]
 
 printInputObjectTypeDefinition :: InputObjectTypeDefinition -> Doc a
@@ -342,11 +359,15 @@ printInputObjectTypeDefinition
   (InputObjectTypeDefinition maybeDescription
                        (Name name)
                        directives
-                       _)
+                       inputFieldsDefinitions)
   = mconcat [
-      maybe mempty printDescription maybeDescription
+      maybe mempty (\x -> printDescription x <> space) maybeDescription
+    , pretty ("input" :: String)
+    , space
     , pretty name
+    , space
     , printDirectives directives
+    , printInputFieldsDefinition inputFieldsDefinitions
     ]
 
 printScalarTypeDefinition :: ScalarTypeDefinition -> Doc ann

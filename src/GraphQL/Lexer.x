@@ -125,7 +125,9 @@ $comma = \,
 @reserved
   = input
   | implements
+  | interface
   | extend
+  | union
   | fragment
   | type
   | enum

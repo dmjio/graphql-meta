@@ -145,10 +145,10 @@ genTypeDefinition :: Gen TypeDefinition
 genTypeDefinition = oneof
   [ DefinitionScalarType <$> genScalarTypeDefinition
   , DefinitionObjectType <$> genObjectTypeDefinition
-  -- , DefinitionInterfaceType <$> genInterfaceTypeDefinition
-  -- , DefinitionUnionType <$> genUnionTypeDefinition
-  -- , DefinitionEnumType <$> genEnumTypeDefinition
-  -- , DefinitionInputObjectType <$> genInputObjectTypeDefinition
+  , DefinitionInterfaceType <$> genInterfaceTypeDefinition
+  , DefinitionUnionType <$> genUnionTypeDefinition
+  , DefinitionEnumType <$> genEnumTypeDefinition
+  , DefinitionInputObjectType <$> genInputObjectTypeDefinition
   ]
 
 genInterfaceTypeDefinition :: Gen InterfaceTypeDefinition
@@ -181,7 +181,7 @@ genEnumTypeDefinition =
 
 genEnumValuesDefinition :: Gen EnumValuesDefinition
 genEnumValuesDefinition = EnumValuesDefinition <$> do
-  choose (0,2) >>= flip replicateM genEnumValueDefinition
+  choose (1,2) >>= flip replicateM genEnumValueDefinition
 
 genEnumValueDefinition :: Gen EnumValueDefinition
 genEnumValueDefinition =
@@ -204,7 +204,7 @@ genInputObjectTypeDefinition =
 genInputFieldsDefinition :: Gen InputFieldsDefinition
 genInputFieldsDefinition =
   InputFieldsDefinition <$> do
-    choose (0,2) >>= flip replicateM genInputValueDefinition
+    choose (1,2) >>= flip replicateM genInputValueDefinition
 
 genInputFieldDefinition :: Gen InputValueDefinition
 genInputFieldDefinition =
@@ -271,7 +271,7 @@ genDirectiveDefinition =
 
 genArgumentsDefinition :: Gen ArgumentsDefinition
 genArgumentsDefinition = ArgumentsDefinition <$> do
-  choose (0,2) >>= flip replicateM genInputValueDefinition
+  choose (1,2) >>= flip replicateM genInputValueDefinition
 
 genInputValueDefinition :: Gen InputValueDefinition
 genInputValueDefinition =

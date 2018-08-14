@@ -166,8 +166,8 @@ EnumTypeDefinition :: { EnumTypeDefinition }
   { EnumTypeDefinition $1 $3 $4 $5 }
 
 UnionMemberTypes :: { [NamedType] }
-  : '|' NamedType { [$2] }
-  | NamedType { [$1] }
+  : '=' NamedType { [$2] }
+  | '=' '|' NamedType { [$3] }
   | UnionMemberTypes '|' NamedType { $3 : $1 }
 
 InterfaceTypeDefinition :: { InterfaceTypeDefinition }
@@ -206,10 +206,11 @@ EnumTypeExtension :: { EnumTypeExtension }
 
 MaybeEnumValuesDefinition :: { EnumValuesDefinition }
   : { EnumValuesDefinition [] }
-  | '{' EnumValuesDefinition '}' { EnumValuesDefinition $2 }
+  | '{' EnumValuesDefinition '}' { EnumValuesDefinition (reverse $2) }
 
 EnumValuesDefinition :: { [EnumValueDefinition] }
-  : EnumValuesDefinition EnumValueDefinition { $2 : $1 }
+  : EnumValueDefinition { [$1] }
+  | EnumValuesDefinition EnumValueDefinition { $2 : $1 }
 
 EnumValueDefinition :: { EnumValueDefinition }
  : MaybeDescription EnumValue MaybeDirectives { EnumValueDefinition $1 $2 $3 }
@@ -269,14 +270,15 @@ MaybeDirectives :: { Directives }
 
 MaybeInputFieldsDefinition :: { InputFieldsDefinition }
   : { InputFieldsDefinition [] }
-  | '{' InputValueDefinitions '}' { InputFieldsDefinition $2 }
+  | '{' InputValueDefinitions '}' { InputFieldsDefinition (reverse $2) }
 
 InputValueDefinitions :: { [InputValueDefinition] }
-  : InputValueDefinitions InputValueDefinition { $2 : $1 }
+  : InputValueDefinition { [$1] }
+  | InputValueDefinitions InputValueDefinition { $2 : $1 }
 
 MaybeUnionMemberTypes :: { UnionMemberTypes }
   : { UnionMemberTypes [] }
-  | UnionMemberTypes { UnionMemberTypes $1 }
+  | UnionMemberTypes { UnionMemberTypes (reverse $1) }
 
 MaybeImplementsInterfaces :: { ImplementsInterfaces }
   : { ImplementsInterfaces [] }
