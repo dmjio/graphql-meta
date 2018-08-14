@@ -20,7 +20,7 @@ printDocument
   :: Document
   -> Doc ann
 printDocument (Document defs)
-  = hsep (printDefinition <$> defs)
+  = vsep (printDefinition <$> defs)
 
 -- | Pretty prints a 'Definition'
 printDefinition
