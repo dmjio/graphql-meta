@@ -187,6 +187,12 @@ parserSpec = do
     it "Should fail to parse" $
       gDef "{{building {floorCount}}" `shouldSatisfy` isLeft
 
+  describe "Should reserved keywords as names" $
+    it "Should parse reserved keywords as names" $
+      gDef "query Foo($query: Episode) { query(query: $query) { } }"
+        `shouldSatisfy`
+          isRight
+
   describe "Should parse Type System Extensions" $ do
     it "Should parse Scalar Type Extensions" $
       gDef "extend scalar Foo @lol" `shouldBe` Right

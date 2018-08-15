@@ -24,7 +24,7 @@ module GraphQL.Parser
 --------------------------------------------------------------------------------
 import qualified Data.Text as T
 import           Data.Text (Text)
-import Data.ByteString (ByteString)
+import           Data.ByteString (ByteString)
 --------------------------------------------------------------------------------
 import GraphQL.Lexer
 import GraphQL.AST
@@ -60,11 +60,13 @@ import GraphQL.AST
   type          { TokenReserved "type" }
   extend        { TokenReserved "extend" }
   fragment      { TokenReserved "fragment" }
+  query         { TokenOperator Query }
+  subscription  { TokenOperator Subscription }
+  mutation      { TokenOperator Mutation }
   name		{ TokenName $$ }
   string	{ TokenString $$ }
   bool		{ TokenBool $$ }
   null		{ TokenNull }
-  operationType { TokenOperator $$ }
   executableDirectiveLocation { TokenExecutableDirectiveLocation $$ }
   typeSystemDirectiveLocation { TokenTypeSystemDirectiveLocation $$ }
   '&'           { TokenPunctuator '&' }
@@ -125,8 +127,13 @@ OperationTypeDefinitions :: { [OperationTypeDefinition] }
   : { [] }
   | OperationTypeDefinitions OperationTypeDefinition { $2 : $1 }
 
+OperationType
+  : query { Query }
+  | subscription { Subscription }
+  | mutation { Mutation }
+
 OperationTypeDefinition :: { OperationTypeDefinition }
-  : operationType ':' NamedType { OperationTypeDefinition $1 $3 }
+  : OperationType ':' NamedType { OperationTypeDefinition $1 $3 }
 
 TypeExtension :: { TypeExtension }
   : ScalarTypeExtension { ExtensionScalarType $1 }
@@ -228,7 +235,7 @@ FieldDefinition :: { FieldDefinition }
   { FieldDefinition $1 $2 $3 $5 $6 }
 
 OperationDefinition :: { OperationDefinition }
-  : operationType MaybeName VariableDefinitions MaybeDirectives SelectionSet
+  : OperationType MaybeName VariableDefinitions MaybeDirectives SelectionSet
     { OperationDefinition $1 $2 $3 $4 $5 }
   | SelectionSet { AnonymousQuery $1 }
 
@@ -350,8 +357,8 @@ MaybeTypeCondition :: { Maybe TypeCondition }
   | TypeCondition { Just $1 }
 
 Field :: { Field }
-  : Alias Name2 Arguments MaybeDirectives MaybeSelectionSet { Field (Just $1) $2 $3 $4 $5 }
-  | Name2 Arguments MaybeDirectives MaybeSelectionSet { Field Nothing $1 $2 $3 $4 }
+  : Alias Name Arguments MaybeDirectives MaybeSelectionSet { Field (Just $1) $2 $3 $4 $5 }
+  | Name Arguments MaybeDirectives MaybeSelectionSet { Field Nothing $1 $2 $3 $4 }
 
 MaybeSelectionSet :: { SelectionSet }
   : { [] }
@@ -395,12 +402,22 @@ ValueObjects :: { [ObjectField] }
 ObjectField :: { ObjectField }
   : Name ':' Value { ObjectField $1 $3 }
 
-Name2 :: { Name }
-  : type { Name "type" }
-  | name { Name $1 }
-
 Name :: { Name }
-  : name { Name $1 }
+  : type { Name "type" }
+  | input { Name "input" }
+  | implements { Name "implements" }
+  | interface { Name "interface" }
+  | extend { Name "extend" }
+  | union { Name "union" }
+  | fragment { Name "fragment" }
+  | enum { Name "enum" }
+  | on { Name "on" }
+  | directive { Name "directive" }
+  | scalar { Name "scalar" }
+  | query { Name "query" }
+  | mutation { Name "mutation" }
+  | subscription { Name "subscription" }
+  | name { Name $1 }
 
 EnumValue :: { EnumValue }
   : Name { EnumValue $1 }
