@@ -57,7 +57,7 @@ class GToObjectTypeDefinition (f :: * -> *) where
 emptyObjectTypeDef :: ObjectTypeDefinition
 emptyObjectTypeDef =
   ObjectTypeDefinition
-    mempty
+    Nothing
     (Name mempty)
     (ImplementsInterfaces [])
     mempty

@@ -272,7 +272,7 @@ printInputValueDefinition
     ]
 
 printDescription :: Description -> Doc ann
-printDescription (Description s) = pretty '"' <> pretty s <> pretty '"'
+printDescription (Description s) = printStringValue s
 
 printTypeDefinition :: TypeDefinition -> Doc a
 printTypeDefinition (DefinitionScalarType scalarTypeDef) =
@@ -558,8 +558,14 @@ printArg :: Argument -> Doc ann
 printArg (Argument (Name name) value) =
   pretty name <> colon <> printValue value
 
+printStringValue :: StringValue -> Doc ann
+printStringValue (StringValue BlockString s) =
+  pretty ("\"\"\"" :: String) <> pretty s <> pretty ("\"\"\"" :: String)
+printStringValue (StringValue SingleLine s) =
+  pretty ("\"" :: String) <> pretty s <> pretty ("\"" :: String)
+
 printValue :: Value -> Doc ann
-printValue (ValueString s)      = pretty '"' <> pretty s <> pretty '"'
+printValue (ValueString s)      = printStringValue s
 printValue (ValueBoolean True)  = pretty ("true" :: String)
 printValue (ValueBoolean False) = pretty ("false" :: String)
 printValue ValueNull            = pretty ("null" :: String)
@@ -602,8 +608,3 @@ printFragmentDefinition
 printTypeCondition :: TypeCondition -> Doc ann
 printTypeCondition (TypeCondition (NamedType (Name n)))
   = pretty ("on" :: String) <+> pretty n
-
--- lok  = print $ getTokens $ show $ printExecutableDefinition k
--- shok = print $ printExecutableDefinition k
--- pok  = exeDef $ show $ printExecutableDefinition k
--- rok = Right k == pok

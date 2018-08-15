@@ -30,6 +30,9 @@ lexerSpec = do
   directiveSpec
   buildingSpec
   commentSpec
+  multiStringSpec
+  multiMultiStringSpec
+  stringSpec
 
 toBs :: Show a => a -> ByteString
 toBs = T.encodeUtf8 . T.pack . show
@@ -170,3 +173,61 @@ commentSpec =
         , TokenPunctuator '}'
         , TokenPunctuator '}'
         ]
+
+multiStringSpec :: Spec
+multiStringSpec =
+  describe "Should lex a multiline string" $
+    it "should lex a basic query w/ a multline string" $
+      getTokens "{building @foo(id: \"\"\"hey\n\"\"\") { floorCount } }"
+        `shouldBe`
+        [TokenPunctuator '{'
+        ,TokenName "building"
+        ,TokenPunctuator '@'
+        ,TokenName "foo"
+        ,TokenPunctuator '('
+        ,TokenName "id"
+        ,TokenPunctuator ':'
+        ,TokenString (StringValue BlockString "hey\n")
+        ,TokenPunctuator ')'
+        ,TokenPunctuator '{'
+        ,TokenName "floorCount"
+        ,TokenPunctuator '}'
+        ,TokenPunctuator '}'
+        ]
+
+stringSpec :: Spec
+stringSpec =
+  describe "Should lex unicode in a string" $ do
+    it "should lex unicode in a string" $
+      getTokens "\"\\ua67D\""
+        `shouldBe`
+        [TokenString (StringValue SingleLine "\\ua67D")]
+    it "should lex multiple unicode in a string" $
+      getTokens "\"\\ua67D\\ua68D\""
+        `shouldBe`
+        [TokenString (StringValue SingleLine "\\ua67D\\ua68D")]
+
+multiMultiStringSpec :: Spec
+multiMultiStringSpec =
+  describe "Should lex multiple multiline strings" $
+    it "should lex a basic query w/ many multiline strings" $
+      getTokens "{building @foo(id: \"\"\"hey\n\"\"\", hah:\"\"\"foo\"\"\") { floorCount } }"
+        `shouldBe`
+        [TokenPunctuator '{'
+        ,TokenName "building"
+        ,TokenPunctuator '@'
+        ,TokenName "foo"
+        ,TokenPunctuator '('
+        ,TokenName "id"
+        ,TokenPunctuator ':'
+        ,TokenString (StringValue BlockString "hey\n")
+        ,TokenName "hah"
+        ,TokenPunctuator ':'
+        ,TokenString (StringValue BlockString "foo")
+        ,TokenPunctuator ')'
+        ,TokenPunctuator '{'
+        ,TokenName "floorCount"
+        ,TokenPunctuator '}'
+        ,TokenPunctuator '}'
+        ]
+

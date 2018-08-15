@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module      : Main
@@ -13,9 +14,9 @@ import qualified Data.Text.Encoding  as T
 --------------------------------------------------------------------------------
 import           Test.GraphQL.Lexer  (lexerSpec)
 import           Test.GraphQL.Parser (parserSpec)
-import           Test.GraphQL.Gen    (genDocument)
-import           GraphQL.Pretty      (printDocument)
-import           GraphQL.Parser      (parseDocument)
+import           Test.GraphQL.Gen    (genDocument) -- , genValue)
+import           GraphQL.Pretty      (printDocument) --, printValue)
+import           GraphQL.Parser      (parseDocument) -- , value)
 --------------------------------------------------------------------------------
 import           Test.Hspec
 import           Test.QuickCheck
@@ -28,3 +29,8 @@ main = hspec (lexerSpec >> parserSpec) >> roundTrip
       quickCheckWith stdArgs { maxSize = 100000, maxSuccess = 100000 } $
         forAll genDocument $ \doc ->
            parseDocument (T.encodeUtf8 . T.pack $ show (printDocument doc)) === Right doc
+    -- roundTripVal :: IO ()
+    -- roundTripVal =
+    --   quickCheckWith stdArgs { maxSize = 100000, maxSuccess = 100000 } $
+    --     forAll genValue $ \v ->
+    --        value (T.encodeUtf8 . T.pack $ show (printValue v)) === Right v
