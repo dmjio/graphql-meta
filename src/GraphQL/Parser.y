@@ -472,6 +472,7 @@ parseDocument :: ByteString -> Either String Document
 parseDocument = parseDoc . getTokens
 
 parseError :: [Token] -> Either String a
+parseError [] = Left "Parse error"
 parseError tks =
   Left $ "Parse error: " ++ explainToken (head tks)
     where
