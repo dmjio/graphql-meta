@@ -1,6 +1,5 @@
 {-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE DerivingStrategies         #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE FlexibleInstances          #-}
@@ -142,8 +141,7 @@ instance NFData FragmentDefinition
 -- | A GraphQL 'FragmentName'
 -- http://facebook.github.io/graphql/draft/#FragmentName
 newtype FragmentName = FragmentName Name
-  deriving stock   (Show, Eq, Generic, Data, Typeable)
-  deriving newtype (Monoid, Semigroup, NFData, Hashable)
+  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup, NFData, Hashable)
 
 -- | A GraphQL 'TypeCondition'
 -- http://facebook.github.io/graphql/draft/#TypeCondition
@@ -193,8 +191,7 @@ instance NFData VariableDefinition
 -- | A GraphQL 'Variable'
 -- http://facebook.github.io/graphql/draft/#Variable
 newtype Variable = Variable Name
-  deriving stock   (Show, Eq, Generic, Data, Typeable)
-  deriving newtype (Monoid, Semigroup, NFData, Hashable)
+  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup, NFData, Hashable)
 
 -- | A GraphQL 'DefaultValue'
 -- http://facebook.github.io/graphql/draft/#DefaultValue
@@ -214,8 +211,7 @@ instance NFData Type
 -- | A GraphQL 'NamedType'
 -- http://facebook.github.io/graphql/draft/#NamedType
 newtype NamedType = NamedType Name
-  deriving stock   (Show, Eq, Generic, Data, Typeable)
-  deriving newtype (Monoid, Semigroup, NFData, Hashable)
+  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup, NFData, Hashable)
 
 -- | A GraphQL 'ListType'
 -- http://facebook.github.io/graphql/draft/#ListType
@@ -551,5 +547,4 @@ instance NFData DirectiveLocation
 -- | A GraphQL 'Name'
 -- http://facebook.github.io/graphql/draft/#Name
 newtype Name = Name Text
-  deriving stock   (Show, Eq, Generic, Data, Typeable)
-  deriving newtype (Monoid, Semigroup, NFData, Hashable)
+  deriving (Show, Eq, Generic, Data, Typeable, Monoid, Semigroup, NFData, Hashable)

@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts   #-}
 {-# LANGUAGE DeriveAnyClass     #-}
-{-# LANGUAGE ViewPatterns       #-}
 {-# LANGUAGE RecordWildCards    #-}
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE DeriveGeneric      #-}
@@ -143,16 +142,16 @@ processEscapedUnicode :: Action
 processEscapedUnicode = appendMode
 
 appendMode :: Action
-appendMode len bs = do
+appendMode = action
+
+action :: Action
+action len bs = do
   s@LexerState {..} <- get
-  put s { stringBuffer = stringBuffer <> B.take len (alexStr bs) }
+  put s { stringBuffer = stringBuffer `B.append` B.take len (alexStr bs) }
   pure Nothing
 
 appendModeBlock :: Action
-appendModeBlock len bs = do
-  s@LexerState {..} <- get
-  put s { stringBuffer = stringBuffer <> B.take len (alexStr bs) }
-  pure Nothing
+appendModeBlock = action
 
 endMode :: Action
 endMode _ _ = do
