@@ -1,6 +1,7 @@
 { mkDerivation, alex, array, attoparsec, base, bytestring
-, containers, criterion, deepseq, happy, hspec, mtl, prettyprinter
-, QuickCheck, quickcheck-instances, stdenv, template-haskell, text
+, containers, criterion, deepseq, happy, hashable, hspec, mtl
+, prettyprinter, QuickCheck, quickcheck-instances, stdenv
+, template-haskell, text
 }:
 mkDerivation {
   pname = "graphql-meta";
@@ -9,7 +10,7 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    array attoparsec base bytestring containers deepseq mtl
+    array attoparsec base bytestring containers deepseq hashable mtl
     prettyprinter template-haskell text
   ];
   libraryToolDepends = [ alex happy ];
