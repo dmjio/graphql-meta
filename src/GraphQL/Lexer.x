@@ -60,7 +60,6 @@ $zero = 0
   | @integerPart @fractionalPart @exponentPart
 
 @escapedUnicode = [0-9A-Fa-f]{4}
--- @escapedCharacter = [\"\/\\\b\f\n\r\t]
 @byteOrderMark = \xFEFE
 @whitespace = \x0009 | \x0020
 @lineTerminator = \x000A | \x000D \x000A | \x000D .
@@ -140,7 +139,13 @@ tokens :-
   \"\"\" { endMode }
  }
  <string> {
-   \\ \ @escapedCharacter { processEscapedCharacter }
+   \\ b { emitChar '\b' }
+   \\ t { emitChar '\t' }
+   \\ n { emitChar '\n' }
+   \\ f { emitChar '\f' }
+   \\ r { emitChar '\r' }
+   \\ \" { emitChar '"' }
+   \\ \\ { emitChar '\\' }
    \\ u @escapedUnicode { processEscapedUnicode }
    $sourceCharacter # [\"\n\\] { appendMode }
    \" { endMode }

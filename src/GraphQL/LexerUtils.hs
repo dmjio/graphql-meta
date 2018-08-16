@@ -14,12 +14,14 @@
 --------------------------------------------------------------------------------
 module GraphQL.LexerUtils where
 
+import           Data.Char
 import           Control.DeepSeq
 import           Control.Monad.State
 import           Data.Data
 import           Data.Text                (Text)
 import qualified Data.Text                as T
 import qualified Data.Text.Encoding       as T
+import qualified Data.Text.Read           as T
 import           Data.Word
 import           GHC.Generics
 import           Text.Read                hiding (get)
@@ -88,6 +90,7 @@ data Token
 data Error
   = ConversionError Text Text
   | LexerError Text
+  | BadEscape Char
   | NoMatch Text
   | UntermBlockString
   | UntermString
@@ -139,7 +142,19 @@ processEscapedCharacter :: Action
 processEscapedCharacter = appendMode
 
 processEscapedUnicode :: Action
-processEscapedUnicode = appendMode
+processEscapedUnicode len bs =
+ case T.hexadecimal $ T.drop 2 $ T.decodeUtf8 (B.take len (alexStr bs)) of
+    Right (n, _)
+      | n < 0x110000 -> emitChar (chr n) len bs
+      | otherwise    -> pure . pure $ TokenError (BadEscape (chr n))
+    Left e -> pure . pure $ TokenError (LexerError $ T.pack e)
+
+
+emitChar :: Char -> Action
+emitChar c _ _  = do
+  s@LexerState {..} <- get
+  put s { stringBuffer = stringBuffer `B8.snoc` c }
+  pure Nothing
 
 appendMode :: Action
 appendMode = action

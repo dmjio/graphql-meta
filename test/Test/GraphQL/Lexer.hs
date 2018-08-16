@@ -199,13 +199,13 @@ stringSpec :: Spec
 stringSpec =
   describe "Should lex unicode in a string" $ do
     it "should lex unicode in a string" $
-      getTokens "\"\\ua67D\""
+      getTokens "\"\\u0021\""
         `shouldBe`
-        [TokenString (StringValue SingleLine "\\ua67D")]
+        [TokenString (StringValue SingleLine "!")]
     it "should lex multiple unicode in a string" $
-      getTokens "\"\\ua67D\\ua68D\""
+      getTokens "\"\\u0021\\u0023\""
         `shouldBe`
-        [TokenString (StringValue SingleLine "\\ua67D\\ua68D")]
+        [TokenString (StringValue SingleLine "!#")]
 
 multiMultiStringSpec :: Spec
 multiMultiStringSpec =
