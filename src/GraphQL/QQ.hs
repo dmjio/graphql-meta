@@ -67,20 +67,60 @@ def = QuasiQuoter
     , quoteType = fail "quotType: not implemented"
     }
 
+getOpDefs :: Document -> [ExecutableDefinition]
+getOpDefs (Document ds) = [ e | DefinitionExecutable e <- ds ]
+
 parseGQLQuery
   :: String
   -> Q Exp
 parseGQLQuery
-  = either fail liftDataWithText . exeDef . T.encodeUtf8 . T.pack
+  = either fail liftDataWithText . parseDocument . T.encodeUtf8 . T.pack
   where
-    liftDataWithText :: ExecutableDefinition -> Q Exp
-    liftDataWithText edef = do
-      scopeTable  <- makeTable (getVariables edef)
-      fieldsTable <- makeTable (getFields edef)
-      dataToExpQ (withText `extQ` goExeDef scopeTable fieldsTable) edef
+    liftDataWithText :: Document -> Q Exp
+    liftDataWithText doc = do
+      scopeTable  <- makeTable (getVariables doc)
+      fieldsTable <- makeTable (getFields doc)
+      dataToExpQ (withText `extQ` goDoc scopeTable fieldsTable) doc
 
     extQ f g a = maybe (f a) g (cast a)
     withText a = liftText <$> cast a
+
+    goDoc scopeTable fieldsTable (Document definitions) = do
+      newDefs <- traverse (goDef scopeTable fieldsTable) definitions
+      Just [| Documnet $(listE newDefs) |]
+
+    goDef scopeTable fieldsTable (DefinitionExecutable edef) = do
+      newDef <- goExeDef scopeTable fieldsTable edef
+      Just [| DefinitionExecutable $newDef |]
+
+    goDef scopeTable fieldsTable (DefinitionTypeSystem tsdef) = do
+      newDef <- goTypeSystemDef scopeTable fieldsTable tsdef
+      Just [| DefinitionTypeSystem $newDef |]
+
+    goDef scopeTable fieldsTable (ExtensionTypeSystem ets) = do
+      newDef <- goExtensionTypeSystem scopeTable fieldsTable ets
+      Just [| DefinitionTypeSystem $newDef |]
+
+    goExtensionSchema scopeTable fieldsTable (ExtensionSchema es) = do
+      newEs <- goSchemaExtension scopeTable fieldsTable es
+      Just [| ExtensionType $newEs |]
+
+    goExtensionTypeSystem scopeTable fieldsTable (ExtensionType te) = do
+      newTe <- goSchemaExtension scopeTable fieldsTable te
+      Just [| ExtensionType $newTe |]
+
+    goTypeExtension scopeTable _  (ExtensionScalarType (ScalarTypeExtension name dirs)) = do
+      let newName' = subName name
+      newDirs <- traverse (subDirs scopeTable) dirs
+      Just [| ExtensionScalarType (ScalarTypeExtension $newName' $(listE newDirs)) |]
+
+    goTypeExtension scopeTable _
+      (ExtensionObjectType (ObjectTypeExtension name ii dirs fds)) = do
+      undefined
+
+    goSchemaExtension = undefined
+
+    goTypeSystemDef = undefined
 
     goExeDef scopeTable fieldsTable (DefinitionOperation oDef) = do
       newDef <- goOpDef scopeTable fieldsTable oDef
@@ -285,9 +325,9 @@ instance {-# overlaps #-} ToExpr String where
   toExpr = ValueString . StringValue SingleLine . T.pack
 
 getVariables
-  :: ExecutableDefinition
+  :: Document
   -> Set Text
-getVariables = goDef
+getVariables = S.unions . map goDef . getOpDefs
   where
     goDef (DefinitionOperation oDef) = goOpDef oDef
     goDef (DefinitionFragment _) = mempty
@@ -311,9 +351,9 @@ getVariables = goDef
       S.singleton v
 
 getFields
-  :: ExecutableDefinition
+  :: Document
   -> Set Text
-getFields = go
+getFields = S.unions . map go . getOpDefs
   where
     go (DefinitionFragment _) = mempty
     go (DefinitionOperation (AnonymousQuery sels))
