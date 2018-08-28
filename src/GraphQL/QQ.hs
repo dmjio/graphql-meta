@@ -14,10 +14,8 @@
 --
 --------------------------------------------------------------------------------
 module GraphQL.QQ
-  ( -- * QuasiQuoters
-    query
-  -- , schema
-
+  ( -- * QuasiQuoter
+    graphql
     -- * Classes
   , ToExpr  (..)
   , ToField (..)
@@ -42,22 +40,9 @@ import           GraphQL.Lexer
 import           GraphQL.Parser
 --------------------------------------------------------------------------------
 
--- | QuasiQuoter for GraphQL 'Schema' definitions
--- schema :: QuasiQuoter
--- schema = def { quoteExp = parseGQLSchema }
-
--- | Parsing the GraphQL Schema
--- parseGQLSchema
---   :: String
---   -> Q Exp
--- parseGQLSchema
---   = either fail (dataToExpQ (fmap liftText . cast))
---   . parseOnly schemaDocument
---   . T.pack
-
--- | QuasiQuoter for GraphQL 'QueryDocument' definitions
-query :: QuasiQuoter
-query = def { quoteExp = parseGQLQuery }
+-- | QuasiQuoter for GraphQL 'Document'
+graphql :: QuasiQuoter
+graphql = def { quoteExp = parseGraphQL }
 
 def :: QuasiQuoter
 def = QuasiQuoter
@@ -70,10 +55,10 @@ def = QuasiQuoter
 getOpDefs :: Document -> [ExecutableDefinition]
 getOpDefs (Document ds) = [ e | DefinitionExecutable e <- ds ]
 
-parseGQLQuery
+parseGraphQL
   :: String
   -> Q Exp
-parseGQLQuery
+parseGraphQL
   = either fail liftDataWithText . parseDocument . T.encodeUtf8 . T.pack
   where
     liftDataWithText :: Document -> Q Exp
@@ -103,10 +88,10 @@ parseGQLQuery
 
     goExtensionSchema scopeTable fieldsTable (ExtensionSchema es) = do
       newEs <- goSchemaExtension scopeTable fieldsTable es
-      Just [| ExtensionType $newEs |]
+      Just [| ExtensionSchema $newEs |]
 
     goExtensionTypeSystem scopeTable fieldsTable (ExtensionType te) = do
-      newTe <- goSchemaExtension scopeTable fieldsTable te
+      newTe <- goTypeExtension scopeTable fieldsTable te
       Just [| ExtensionType $newTe |]
 
     goTypeExtension scopeTable _  (ExtensionScalarType (ScalarTypeExtension name dirs)) = do
@@ -114,13 +99,23 @@ parseGQLQuery
       newDirs <- traverse (subDirs scopeTable) dirs
       Just [| ExtensionScalarType (ScalarTypeExtension $newName' $(listE newDirs)) |]
 
-    goTypeExtension scopeTable _
-      (ExtensionObjectType (ObjectTypeExtension name ii dirs fds)) = do
-      undefined
+    goTypeExtension scopeTable _ (ExtensionObjectType (ObjectTypeExtension name ii dirs (FieldsDefinition fds))) = do
+      let newName' = subName name
+      newDirs <- traverse (subDirs scopeTable) dirs
+      newIIS <- traverse goImplementsInterfaces dirs
+      newFieldsDefs <- undefined -- traverse goFieldsDefs fds
+      Just [| ExtensionObjectType (ObjectTypeExtension $newName'
+                                     $(listE newIIS)
+                                     $(listE newDirs)
+                                     (FieldsDefinition $newFieldsDefs)) |]
 
     goSchemaExtension = undefined
 
     goTypeSystemDef = undefined
+
+    goFieldsDefs fieldDef = Just [| $fieldDef |]
+
+    goImplementsInterfaces = undefined
 
     goExeDef scopeTable fieldsTable (DefinitionOperation oDef) = do
       newDef <- goOpDef scopeTable fieldsTable oDef
@@ -365,6 +360,7 @@ getFields = S.unions . map go . getOpDefs
     goSelSet _ = mempty
 
 instance Lift ExecutableDefinition
+instance Lift FieldsDefinition
 instance Lift OperationType
 instance Lift TypeCondition
 instance Lift Selection

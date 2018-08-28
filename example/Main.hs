@@ -13,9 +13,13 @@
 module Main (main) where
 --------------------------------------------------------------------------------
 import           GHC.Generics
+import qualified Data.Text as T
+import           Data.Text    (Text)
+import qualified Data.Text.Encoding as T
 import           Data.Proxy
 --------------------------------------------------------------------------------
-
+import           GraphQL.QQ
+import           GraphQL.Parser
 import           GraphQL.Generic
 import           GraphQL.AST
 import           GraphQL.Pretty
@@ -63,6 +67,13 @@ singleSubstitution
   -> ExecutableDefinition
 singleSubstitution
   = undefined
+
+lol :: Either String ExecutableDefinition
+lol = exeDef
+    $ T.encodeUtf8
+    $ T.pack
+    $ show
+    $ printExecutableDefinition [query| { building { floorCount } } |]
 
 -- | Example of using GHC.Generics to create a Schema from a product type
 data Person = Person
