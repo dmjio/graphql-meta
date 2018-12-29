@@ -125,7 +125,7 @@ showPersonSchema = print $ toObjectTypeDefinition (Proxy @ Person)
 
 ## Credit
 
-- Inspired by [@edsko](https://github.com/edsko)'s work [Quasi-quoting DLS for free](http://www.well-typed.com/blog/2014/10/quasi-quoting-dsls/).
+- Inspired by [@edsko](https://github.com/edsko)'s work [Quasi-quoting DSLs for free](http://www.well-typed.com/blog/2014/10/quasi-quoting-dsls/).
 - `Alex` and `Happy` lexing & parsing inspired by [config-value](https://github.com/glguy/config-value)
 
 ## License
