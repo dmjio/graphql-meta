@@ -4,3 +4,7 @@ result
 .DS_Store
 dist-newstyle
 .stack-work
+*.o
+*.hi
+/src/GraphQL/Lexer.hs
+/src/GraphQL/Parser.hs

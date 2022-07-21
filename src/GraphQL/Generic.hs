@@ -1,14 +1,13 @@
-{-# LANGUAGE CPP                   #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE KindSignatures        #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeApplications      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE DefaultSignatures     #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE DefaultSignatures    #-}
+{-# LANGUAGE KindSignatures       #-}
 --------------------------------------------------------------------------------
 -- |
 -- Module      : GraphQL.Generic
@@ -44,7 +43,7 @@ class ToObjectTypeDefinition (a :: *) where
     -> ObjectTypeDefinition
   toObjectTypeDefinition Proxy
      = flip gToObjectTypeDefinition emptyObjectTypeDef
-     $ Proxy @ (Rep a)
+     $ (Proxy :: Proxy (Rep a))
 
 -- | Internal class meant only for 'Generic' datatype instances
 class GToObjectTypeDefinition (f :: * -> *) where
@@ -88,7 +87,7 @@ combineFields
   = ObjectTypeDefinition d name is ds $ FieldsDefinition (as <> bs)
 
 instance GToObjectTypeDefinition a => GToObjectTypeDefinition (D1 i a) where
-  gToObjectTypeDefinition Proxy = gToObjectTypeDefinition (Proxy @ a)
+  gToObjectTypeDefinition Proxy = gToObjectTypeDefinition (Proxy @a)
 
 instance (KnownSymbol name, GToObjectTypeDefinition a) =>
   GToObjectTypeDefinition (C1 ('MetaCons name x y) a) where
@@ -102,8 +101,8 @@ instance (ToGQLType gType, KnownSymbol name) =>
     gToObjectTypeDefinition Proxy = addField field
         where
           field = FieldDefinition Nothing fName (ArgumentsDefinition []) gtype []
-          fName = Name $ pack $ symbolVal (Proxy @ name)
-          gtype = toGQLType (Proxy @ gType)
+          fName = Name $ pack $ symbolVal (Proxy @name)
+          gtype = toGQLType (Proxy @gType)
 
 instance GToObjectTypeDefinition U1 where
   gToObjectTypeDefinition Proxy = id
@@ -111,16 +110,16 @@ instance GToObjectTypeDefinition U1 where
 instance (GToObjectTypeDefinition a, GToObjectTypeDefinition b) =>
   GToObjectTypeDefinition (a :*: b) where
     gToObjectTypeDefinition Proxy o =
-      gToObjectTypeDefinition (Proxy @ a) o
+      gToObjectTypeDefinition (Proxy @a) o
         `combineFields`
-          gToObjectTypeDefinition (Proxy @ b) o
+          gToObjectTypeDefinition (Proxy @b) o
 
 instance (GToObjectTypeDefinition a, GToObjectTypeDefinition b) =>
   GToObjectTypeDefinition (a :+: b) where
     gToObjectTypeDefinition Proxy o =
-      gToObjectTypeDefinition (Proxy @ a) o
+      gToObjectTypeDefinition (Proxy @a) o
         `combineFields`
-           gToObjectTypeDefinition (Proxy @ b) o
+           gToObjectTypeDefinition (Proxy @b) o
 
 -- | Resolve Haskell types to GraphQL primitive names
 class ToNamed a where
@@ -153,37 +152,37 @@ instance ToGQLType a => ToGQLType [a] where
     = TypeNonNull
     $ NonNullTypeList
     $ ListType
-    $ toGQLType (Proxy @ a)
+    $ toGQLType (Proxy @a)
 
 instance {-# overlaps #-} ToGQLType String where
   toGQLType Proxy
     = TypeNonNull
     $ NonNullTypeNamed
-    $ toNamed (Proxy @ String)
+    $ toNamed (Proxy @String)
 
 instance ToGQLType Int where
   toGQLType Proxy
     = TypeNonNull
     $ NonNullTypeNamed
-    $ toNamed (Proxy @ Int)
+    $ toNamed (Proxy @Int)
 
 instance ToGQLType Integer where
   toGQLType Proxy
     = TypeNonNull
     $ NonNullTypeNamed
-    $ toNamed (Proxy @ Integer)
+    $ toNamed (Proxy @Integer)
 
 instance ToGQLType Double where
   toGQLType Proxy
     = TypeNonNull
     $ NonNullTypeNamed
-    $ toNamed (Proxy @ Double)
+    $ toNamed (Proxy @Double)
 
 instance ToGQLType Bool where
   toGQLType Proxy
     = TypeNonNull
     $ NonNullTypeNamed
-    $ toNamed (Proxy @ Bool)
+    $ toNamed (Proxy @Bool)
 
 instance ToNamed a => ToGQLType (Maybe a) where
-  toGQLType Proxy = TypeNamed $ toNamed (Proxy @ a)
+  toGQLType Proxy = TypeNamed $ toNamed (Proxy @a)

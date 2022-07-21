@@ -1,7 +1,7 @@
 { mkDerivation, alex, array, attoparsec, base, bytestring
 , containers, criterion, deepseq, happy, hashable, hspec, mtl
 , prettyprinter, QuickCheck, quickcheck-instances, stdenv
-, template-haskell, text
+, template-haskell, text, lib
 }:
 mkDerivation {
   pname = "graphql-meta";
@@ -21,5 +21,5 @@ mkDerivation {
   benchmarkHaskellDepends = [ base bytestring criterion text ];
   homepage = "https://github.com/urbint/graphql-meta";
   description = "Generic and meta programming facilities for GraphQL";
-  license = stdenv.lib.licenses.bsd3;
+  license = lib.licenses.bsd3;
 }

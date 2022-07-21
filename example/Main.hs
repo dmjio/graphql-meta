@@ -36,8 +36,6 @@ import           GraphQL.Pretty
 -- @
 main :: IO ()
 main = do
-  pPrint buildingExample
-  pPrint (singleSubstitution "test")
   showPersonSchema
     where
       pPrint = print . printExecutableDefinition
@@ -73,5 +71,5 @@ data Person = Person
 instance ToObjectTypeDefinition Person
 
 showPersonSchema :: IO ()
-showPersonSchema = print $ toObjectTypeDefinition (Proxy @ Person)
+showPersonSchema = print $ toObjectTypeDefinition (Proxy @Person)
 

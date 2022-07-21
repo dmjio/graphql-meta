@@ -8,9 +8,9 @@
 -- Maturity    : Usable
 --
 --------------------------------------------------------------------------------
-module GraphQL.Pretty where -- ( printExecutableDefinition ) where
+module GraphQL.Pretty where
 --------------------------------------------------------------------------------
-import Data.Text.Prettyprint.Doc
+import Prettyprinter
 --------------------------------------------------------------------------------
 import GraphQL.AST
 import GraphQL.Lexer

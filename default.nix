@@ -1,3 +1,3 @@
-{ pkgs ? import <nixpkgs> {}, compiler ? "ghc843" }:
+{ pkgs ? import <nixpkgs> {} }:
 with pkgs.haskell.lib;
-  buildStrictly (pkgs.haskell.packages.${compiler}.callPackage ./graphql-meta.nix {})
+  buildStrictly (pkgs.haskellPackages.callPackage ./graphql-meta.nix {})

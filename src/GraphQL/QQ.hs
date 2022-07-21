@@ -61,10 +61,10 @@ query = def { quoteExp = parseGQLQuery }
 
 def :: QuasiQuoter
 def = QuasiQuoter
-    { quoteExp  = fail "quotExp: not implemented"
-    , quotePat  = fail "quotPat: not implemented"
-    , quoteDec  = fail "quotDec: not implemented"
-    , quoteType = fail "quotType: not implemented"
+    { quoteExp  = error "quotExp: not implemented"
+    , quotePat  = error "quotPat: not implemented"
+    , quoteDec  = error "quotDec: not implemented"
+    , quoteType = error "quotType: not implemented"
     }
 
 parseGQLQuery
@@ -331,5 +331,4 @@ instance Lift Selection
 instance Lift Directive
 instance Lift Argument
 instance Lift Name
-instance Lift T.Text
 instance Lift Value
