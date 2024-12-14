@@ -5,7 +5,7 @@
 -- |
 -- Module      : Test.GraphQL.Lexer
 -- Description : Tests for lexing GraphQL atoms
--- Maintainer  : David Johnson <david@urbint.com>
+-- Maintainer  : David Johnson <code@dmj.io>
 -- Maturity    : Usable
 --
 --------------------------------------------------------------------------------

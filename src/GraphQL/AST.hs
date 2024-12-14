@@ -7,7 +7,7 @@
 -- |
 -- Module      : GraphQL.AST
 -- Description : GraphQL abstract syntax tree representation
--- Maintainer  : David Johnson <david@urbint.com>
+-- Maintainer  : David Johnson <code@dmj.io>
 -- Maturity    : Usable
 --
 --------------------------------------------------------------------------------

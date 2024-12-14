@@ -6,7 +6,7 @@
 -- |
 -- Module      : Main
 -- Description : Example usage of graphql-meta
--- Maintainer  : David Johnson <david@urbint.com>, Ryan Schmukler <ryan@urbint.com>
+-- Maintainer  : David Johnson <code@dmj.io>, Ryan Schmukler <ryan@urbint.com>
 -- Maturity    : Usable
 --
 --------------------------------------------------------------------------------

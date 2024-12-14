@@ -4,7 +4,7 @@
 -- |
 -- Module      : GraphQL.Pretty
 -- Description : Pretty-printing for the GraphQL AST
--- Maintainer  : David Johnson <david@urbint.com>
+-- Maintainer  : David Johnson <code@dmj.io>
 -- Maturity    : Usable
 --
 --------------------------------------------------------------------------------

@@ -9,7 +9,7 @@
 -- |
 -- Module      : GraphQL.QQ
 -- Description : Compile-time facilities for dealing with GraphQL schema / queries
--- Maintainer  : David Johnson <david@urbint.com>, Ryan Schmukler <ryan@urbint.com>
+-- Maintainer  : David Johnson <code@dmj.io>, Ryan Schmukler <ryan@urbint.com>
 -- Maturity    : Usable
 --
 --------------------------------------------------------------------------------

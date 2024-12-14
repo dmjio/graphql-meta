@@ -3,7 +3,7 @@
 -- |
 -- Module      : Test.GraphQL.Gen
 -- Description : Test fixture generators for GraphQL AST
--- Maintainer  : David Johnson <david@urbint.com>
+-- Maintainer  : David Johnson <code@dmj.io>
 -- Maturity    : Usable
 --
 --------------------------------------------------------------------------------

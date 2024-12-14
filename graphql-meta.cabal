@@ -6,7 +6,7 @@ homepage:            https://github.com/urbint/graphql-meta
 license:             BSD3
 license-file:        LICENSE
 author:              David Johnson, Ryan Schmukler
-maintainer:          david@urbint.com
+maintainer:          code@dmj.io
 copyright:           Urbint (c) 2018-2019
 category:            Language
 build-type:          Simple

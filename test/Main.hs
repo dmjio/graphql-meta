@@ -3,7 +3,7 @@
 -- |
 -- Module      : Main
 -- Description : GraphQL test runner
--- Maintainer  : David Johnson <david@urbint.com>
+-- Maintainer  : David Johnson <code@dmj.io>
 -- Maturity    : Usable
 --
 --------------------------------------------------------------------------------
